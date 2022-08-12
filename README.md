@@ -6,6 +6,7 @@ Dynamixel SDK wrapper library for ROS
 cd ~/catkin_ws/src
 git clone https://github.com/KobeKosenRobotics/dynamixel_wrapper
 cd ..
+# うまく行かない時はapt update
 rosdep install -i --from-paths src
 catkin build
 ```
