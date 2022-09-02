@@ -11,9 +11,9 @@
 #include <ros/ros.h>
 #include <string>
 #include <cmath>
-#include <dynamixel_sdk/dynamixel_sdk.h>
+
 #include <dynamixel_wrapper/dynamixel_wrapper_base.h>
-#include <dynamixel_wrapper/dynamixel_wrapper_config.h>
+#include <dynamixel_wrapper/dynamixel_wrapper_configs.h>
 
 namespace dynamixel_wrapper{
 class dynamixel_wrapper{
