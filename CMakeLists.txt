@@ -5,12 +5,10 @@ project(dynamixel_wrapper)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-  dynamixel_sdk
   roscpp
   rospy
   std_msgs
   tf
-  dynamixel_sdk
 )
 
 catkin_package(
