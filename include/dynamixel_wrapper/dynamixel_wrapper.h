@@ -70,7 +70,7 @@ class dynamixel_wrapper{
     void setGoalPosition(double degree){ write(motor_config_.goal_position, (int)(degree/360.0f*motor_config_.resolution)); }
     bool getMoving(){ return read(motor_config_.moving); }
     bool getIsInPosition(){return (read(motor_config_.moving_status)&0x01); }
-    double getPresentCurrent(){ return read(motor_config_.present_current)*motor_config_.current_scaling_factor; }
+    double getPresentCurrent(){ return int(read_signed(motor_config_.present_current))*motor_config_.current_scaling_factor; }
     double getPresentVelocity(){ return read(motor_config_.present_velocity)*motor_config_.velocity_scaling_factor; }
     double getPresentPosition(){ return read(motor_config_.present_position)*360.0f/motor_config_.resolution; }
     double getPresentTemperature(){ return read(motor_config_.present_temperature); }
