@@ -56,7 +56,7 @@ int main(int argc, char **argv){
     
 
     motor0.setTorqueEnable(true);
-    
+    motor0.setOperatingMode(5) // current-based position mode
 
     while (n.ok())  {
         ros::spinOnce();
