@@ -29,6 +29,9 @@ class dynamixel_wrapper{
     void setGoalPosition(double deg){write(motor_config_.goal_position,motor_config_.goal_position_size,deg*4096.0/360.0);}
     double getGoalPosition(){return int(read(motor_config_.goal_position,motor_config_.goal_position_size))*360/4096.0;}
 
+    void setGoalCurrent(double current/*[mA]*/){write(motor_config_.goal_current,motor_config_.goal_current_size,current/*[mA]*/);}
+    double getGoalCurrent(){return int(read(motor_config_.goal_current,motor_config_.goal_current_size));}
+
     //if toqque ebable, no working
     void setCurrentLimit(double current/*[mA]*/){write(motor_config_.current_limit,motor_config_.current_limit_size,int(current/motor_config_.current_scaling_factor));}
     double getCurrentLimit(){return read(motor_config_.current_limit,motor_config_.current_limit_size)*motor_config_.current_scaling_factor;}
@@ -60,7 +63,7 @@ dynamixel_wrapper::dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_
     setTorqueEnable(false);
     // initialize
     setCurrentLimit(current_limit);
-    setOperatingMode(5);
+    //setOperatingMode(5);
 
     setTorqueEnable(true);
 }

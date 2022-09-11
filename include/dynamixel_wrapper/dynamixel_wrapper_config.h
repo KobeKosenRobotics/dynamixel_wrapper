@@ -56,4 +56,25 @@ dynamixel_wrapper_config XM430{
 
 };
 
+dynamixel_wrapper_config XL330{
+    //address,byte_size
+    //operating_mode
+    11,1,
+    //torque
+    64,1,
+    //current_limit
+    38,2,1,
+    //goal position
+    116,4,
+    //goal velocity
+    104,4,
+    //goal_current
+    102,2,
+    //currrent_position
+    132,4,
+    //current current
+    126,2
+
+};
+
 }//namespace dynamixel_wrapper
