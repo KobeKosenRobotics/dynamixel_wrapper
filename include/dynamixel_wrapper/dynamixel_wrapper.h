@@ -72,7 +72,7 @@ class dynamixel_wrapper{
     bool getIsInPosition(){return (read(motor_config_.moving_status)&0x01); }
     double getPresentCurrent(){ return int(read_signed(motor_config_.present_current))*motor_config_.current_scaling_factor; }
     double getPresentVelocity(){ return read(motor_config_.present_velocity)*motor_config_.velocity_scaling_factor; }
-    double getPresentPosition(){ return read(motor_config_.present_position)*360.0f/motor_config_.resolution; }
+    double getPresentPosition(){ return read_signed(motor_config_.present_position)*360.0f/motor_config_.resolution; }
     double getPresentTemperature(){ return read(motor_config_.present_temperature); }
     private:
     int id_;
@@ -109,6 +109,7 @@ void dynamixel_wrapper::write(dynamixel_wrapper_config_item item, int value){
         ROS_ERROR("Failed to connect for Dynamixel ID %d", id_);
     }
 }
+
 uint32_t dynamixel_wrapper::read(dynamixel_wrapper_config_item item){
     int address = item.address;
     int byte_size = item.size;
@@ -132,6 +133,7 @@ uint32_t dynamixel_wrapper::read(dynamixel_wrapper_config_item item){
     }
     return value32;
 }
+
 int32_t dynamixel_wrapper::read_signed(dynamixel_wrapper_config_item item){
     int address = item.address;
     int byte_size = item.size;
@@ -142,6 +144,7 @@ int32_t dynamixel_wrapper::read_signed(dynamixel_wrapper_config_item item){
     if(byte_size==1){
         dxl_base_->packetHandler->read1ByteTxRx(dxl_base_->portHandler, id_, address, &value8);
         result=value8;
+        result=result>INT8_MAX?(result-UINT8_MAX):result;
     }
     else if(byte_size==2){
         dxl_base_->packetHandler->read2ByteTxRx(dxl_base_->portHandler, id_, address, &value16);
@@ -151,6 +154,7 @@ int32_t dynamixel_wrapper::read_signed(dynamixel_wrapper_config_item item){
     else if(byte_size==4){
         dxl_base_->packetHandler->read4ByteTxRx(dxl_base_->portHandler, id_, address, &value32);
         result=value32;
+        result=result>INT32_MAX?(result-UINT32_MAX):result;
     }
     else{
         ROS_ERROR("Byte size is undefined");
