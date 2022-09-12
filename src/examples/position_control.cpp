@@ -31,9 +31,10 @@ int main(int argc, char **argv){
     
     std::string port_name("/dev/ttyUSB0");
     int baudrate=1000000;
-
     dynamixel_wrapper::dynamixel_wrapper_base dxl_base(port_name,baudrate);
-    dynamixel_wrapper::dynamixel_wrapper motor0(0,dxl_base,dynamixel_wrapper::XM430_W350_R,0);
+    int motor_id=0;
+    int operating_mode=5;
+    dynamixel_wrapper::dynamixel_wrapper motor0(motor_id,dxl_base,dynamixel_wrapper::XM430_W350_R,operating_mode);
 
 
     motor0.setTorqueEnable(false);
