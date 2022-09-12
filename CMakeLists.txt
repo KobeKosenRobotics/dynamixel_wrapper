@@ -48,3 +48,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
+## examples ##
+
+#add_executable(position_control src/examples/position_control.cpp)
+#target_link_libraries(position_control ${catkin_LIBRARIES})
