@@ -1,3 +1,4 @@
+[![BuildTest](https://github.com/KobeKosenRobotics/dynamixel_wrapper/actions/workflows/buildtest.yml/badge.svg)](https://github.com/KobeKosenRobotics/dynamixel_wrapper/actions/workflows/buildtest.yml)
 # dynamixel_wrapper
 Dynamixel SDK wrapper library for ROS
 
