@@ -28,6 +28,7 @@ jobs:
       - name: Resolve rosdep
         run: |
           cd /home/catkin_ws
+          apt update
           rosdep update
           rosdep install -iry --from-paths src --rosdistro ${{ matrix.rosdistro }}
       - name: Build packages
