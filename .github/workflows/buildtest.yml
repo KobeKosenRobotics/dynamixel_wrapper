@@ -25,7 +25,7 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
       - name: Copy repository
-        run: cp -rp ../dynamxel_wrapper /home/catkin_ws/src
+        run: cp -rp /__w/dynamixel_wrapper/dynamixel_wrapper /home/catkin_ws/src
 
       - name: Resolve rosdep
         run: |
