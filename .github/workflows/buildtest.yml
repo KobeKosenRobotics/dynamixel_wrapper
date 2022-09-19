@@ -5,9 +5,11 @@ on:
   schedule:
     - cron: 0 0 * * *
   pull_request:
+    - main
+    - develop
   push:
     branches:
-      - master
+      - main
 jobs:
   job1:
     name: BuildTest
