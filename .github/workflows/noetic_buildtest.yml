@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rosdistro: [melodic]
+        rosdistro: [noetic]
     env:
       ROS_DISTRO: ${{ matrix.rosdistro }}
     container: hrjp/ros:${{ matrix.rosdistro }}_cudagl
