@@ -28,6 +28,8 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#define SIMULATION
+
 // Prototype Declearation
 class Wait
 {
@@ -60,6 +62,10 @@ int status = 0;
 int scan_count = 0;
 int shaker = 10;
 Wait wait, getIsInPos;    // getIsInPose->wait??
+
+#ifdef SIMULATION
+Wait sim_wait;
+#endif
 
 // Arm Property
 Eigen::Matrix<double, 3, 1> link0, link1, link2, link3, link4, link5;
@@ -130,26 +136,13 @@ void sequence()
             std::cout << "STAY  STAY  STAY  STAY" << std::endl;
             enable = false;
             target_theta << -90, 0, 140, 0, 40, 0;
-            // setGoalPosition(target_theta);
-            // motor1.setGoalPosition(-90);
-            // motor2.setGoalPosition(0);
-            // motor3.setGoalPosition(140);
-            // motor4.setGoalPosition(0);
-            // motor5.setGoalPosition(40);
-            // motor6.setGoalPosition(0);
             break;
 
         case 2:    // PreScan
             std::cout << "PRESCAN  PRESCAN  PRESCAN  PRESCAN" << std::endl;
             target_theta << 0, 45, 45, 0, 90, 0;
-            // setGoalPosition(target_theta);
-            // motor1.setGoalPosition(0);
-            // motor2.setGoalPosition(45);
-            // motor3.setGoalPosition(45);
-            // motor4.setGoalPosition(0);
-            // motor5.setGoalPosition(90);
-            // motor6.setGoalPosition(0);
-            if(isInPosition(0,45,45,0,90,0))
+
+            if(isInPosition(target_theta))
             {
                 status++;
             }
@@ -158,7 +151,7 @@ void sequence()
         case 5:    // Scan
             std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
             is_scanning = true;
-            if(trash_pose.orientation.w > 0 && !wait.isWaiting(10))
+            if(trash_pose.orientation.w > 0 && !wait.isWaiting(5))
             {
                 is_scanning = false;
                 scan_count++;
@@ -224,7 +217,7 @@ void sequence()
                 }
             }
 
-            // Output
+            // LED
             if(is_valid != is_valid_old)
             {
                 motor1.setLED(is_valid?0:255, is_valid?255:0, 0);
@@ -237,7 +230,7 @@ void sequence()
             is_valid_old = is_valid;
 
             // Exit
-            if(wait.isWaiting(5))
+            if(!wait.isWaiting(5))
             {
                 trash_pose.orientation.w = -1;
                 trash_pose.position.x = 0.0;
@@ -252,14 +245,8 @@ void sequence()
         case 15:    // PreRelease1
             std::cout << "PRERELEASE1  PRERELEASE1  PRERELEASE1  PRERELEASE1" << std::endl;
             target_theta << 0, 45, 45, 0, 90, 0;
-            // setGoalPosition(target_theta);
-            // motor1.setGoalPosition(0);
-            // motor2.setGoalPosition(45);
-            // motor3.setGoalPosition(45);
-            // motor4.setGoalPosition(0);
-            // motor5.setGoalPosition(90);
-            // motor6.setGoalPosition(0);
-            if(isInPosition(0,45,45,0,90,0) && !wait.isWaiting(1))
+
+            if(isInPosition(target_theta) && !wait.isWaiting(1))
             {
                 status++;
             }
@@ -268,14 +255,8 @@ void sequence()
         case 17:    // PreRelease2
             std::cout << "PRERELEASE2  PRERELEASE2  PRERELEASE2  PRERELEASE2" << std::endl;
             target_theta << -120, -20, 110, -90, 80, 0;
-            // setGoalPosition(target_theta);
-            // motor1.setGoalPosition(-120);
-            // motor2.setGoalPosition(-20);
-            // motor3.setGoalPosition(110);
-            // motor4.setGoalPosition(-90);
-            // motor5.setGoalPosition(80);
-            // motor6.setGoalPosition(0);
-            if(isInPosition(-90,-20,110,-90,80,0))
+
+            if(isInPosition(target_theta))
             {
                 status++;
             }
@@ -284,14 +265,8 @@ void sequence()
         case 20:    // Release
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -120, -20, 110, -90, 40, 0;
-            // setGoalPosition(target_theta);
-            // motor1.setGoalPosition(-120);
-            // motor2.setGoalPosition(-20);
-            // motor3.setGoalPosition(110);
-            // motor4.setGoalPosition(-90);
-            // motor5.setGoalPosition(40);
-            // motor6.setGoalPosition(0);
-            if(isInPosition(-120,-20,110,-90,40,0))
+
+            if(isInPosition(target_theta))
             {
                 status++;
             }
@@ -300,13 +275,7 @@ void sequence()
         case 22:    // Shake
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             target_theta << -120, -20, 110, -90+shaker, 40, 0;
-            // setGoalPosition(target_theta);
-            // motor1.setGoalPosition(-120);
-            // motor2.setGoalPosition(-20);
-            // motor3.setGoalPosition(110);
-            // motor4.setGoalPosition(-90+shaker);
-            // motor5.setGoalPosition(40);
-            // motor6.setGoalPosition(0);
+
             if(!wait.isWaiting(5))
             {
                 status+=2;
@@ -320,13 +289,7 @@ void sequence()
         case 23:    // Shake
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             target_theta << -120, -20, 110, -90-shaker, 40, 0;
-            // setGoalPosition(target_theta);
-            // motor1.setGoalPosition(-120);
-            // motor2.setGoalPosition(-20);
-            // motor3.setGoalPosition(110);
-            // motor4.setGoalPosition(-90-shaker);
-            // motor5.setGoalPosition(40);
-            // motor6.setGoalPosition(0);
+
             if(isInPosition(-120,-20,110,-90-shaker,40,0))
             {
                 status--;
@@ -336,13 +299,7 @@ void sequence()
         case 25:    // PostRelease
             std::cout << "POSTRELEASE  POSTRELEASE  POSTRELEASE  POSTRELEASE" << std::endl;
             target_theta << -60, -20, 110, -90, 80, 0;
-            // setGoalPosition(target_theta);
-            // motor1.setGoalPosition(-60);
-            // motor2.setGoalPosition(-20);
-            // motor3.setGoalPosition(110);
-            // motor4.setGoalPosition(-90);
-            // motor5.setGoalPosition(80);
-            // motor6.setGoalPosition(0);
+
             if(scan_count > 5)
             {
                 status = 2;
@@ -356,7 +313,7 @@ void sequence()
         case 30:    // Finish
             std::cout << "FINISH  FINISH  FINISH  FINISH" << std::endl;
             target_theta << -90, 0, 140, 0, 40, 0;
-            setGoalPosition(target_theta);
+
             if(!wait.isWaiting(5))
             {
                 status = 0;
@@ -438,7 +395,9 @@ int main(int argc, char **argv)
         sequence();
         if(is_valid)
         {
+            #ifndef SIMULATION
             setGoalPosition(target_theta);
+            #endif
         }
         tf_broadcaster(target_theta);
         
@@ -502,6 +461,15 @@ void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta)
 }
 bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6)
 {
+    #ifdef SIMULATION
+    if(!sim_wait.isWaiting(1))
+    {
+        sim_wait.reset();
+        return true;
+    }
+    #endif
+
+    #ifndef SIMULATION
     double dt1, dt2, dt3, dt4, dt5, dt6;
     dt1 = fabs(t1 - motor1.getPresentPosition());
     dt2 = fabs(t2 - motor2.getPresentPosition());
@@ -510,10 +478,21 @@ bool isInPosition(double t1, double t2, double t3, double t4, double t5, double 
     dt5 = fabs(t5 - motor5.getPresentPosition());
     dt6 = fabs(t6 - motor6.getPresentPosition());
     if(dt2 < 1 && dt2 < 1 && dt3 < 1 && dt4 < 1 && dt5 < 1 && dt6 < 1) return true;
+    #endif
+
     return false;
 }
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
 {
+    #ifdef SIMULATION
+    if(!sim_wait.isWaiting(1))
+    {
+        sim_wait.reset();
+        return true;
+    }
+    #endif
+
+    #ifndef SIMULATION
     double dt1, dt2, dt3, dt4, dt5, dt6;
     dt1 = fabs(target_theta(0,0)- motor1.getPresentPosition());
     dt2 = fabs(target_theta(1,0) - motor2.getPresentPosition());
@@ -522,7 +501,10 @@ bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
     dt5 = fabs(target_theta(4,0) - motor5.getPresentPosition());
     dt6 = fabs(target_theta(5,0) - motor6.getPresentPosition());
     if(dt2 < 1 && dt2 < 1 && dt3 < 1 && dt4 < 1 && dt5 < 1 && dt6 < 1) return true;
+    #endif
+    
     return false;
+    
 }
 
 // Basic Rotation
