@@ -28,7 +28,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-#define SIMULATION
+// #define SIMULATION
 
 // Prototype Declearation
 class Wait
@@ -83,6 +83,7 @@ double val, x, y, z, virtual_hight, radius, bowstring, alpha, beta, delta;
 bool is_valid = true, is_valid_old = true;
 Eigen::Matrix<double, 6, 1> target_theta;    // target_theta: to motor, theta: from sensor
 double duration_time = 3.0;
+bool is_first_inverse_kinematics = true;
 
 // Motor Declaration
 std::string port_name("/dev/ttyUSB0");
@@ -114,16 +115,15 @@ void enable_cb(std_msgs::Bool::ConstPtr msg)
 }
 void trash_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
-    if(is_scanning && msg->orientation.w > 0)    // exist:w=1, not exsist:w=-1;
+    if(is_scanning && msg->orientation.w > 0.5)    // exist:w=1, not exsist:w=-1;
     {
         if(*msg == target_pose) return;
         trash_pose = *msg;
-        start_pose = forwardKinematics();
+        target_pose = *msg;
         if(msg->orientation.x > 3.0)
         {
             duration_time = msg->orientation.x;
         }
-        start_time = ros::Time::now();
     }
 }
 
@@ -135,11 +135,12 @@ void sequence()
         case 0:    // Stay
             std::cout << "STAY  STAY  STAY  STAY" << std::endl;
             enable = false;
+            scan_count = 0;
             target_theta << -90, 0, 140, 0, 40, 0;
             break;
 
         case 2:    // PreScan
-            std::cout << "PRESCAN  PRESCAN  PRESCAN  PRESCAN" << std::endl;
+            std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
             target_theta << 0, 45, 45, 0, 90, 0;
 
             if(isInPosition(target_theta))
@@ -151,14 +152,14 @@ void sequence()
         case 5:    // Scan
             std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
             is_scanning = true;
-            if(trash_pose.orientation.w > 0 && !wait.isWaiting(5))
+            if(trash_pose.orientation.w > 0.5 && !wait.isWaiting(3))
             {
                 is_scanning = false;
                 scan_count++;
                 wait.reset();
                 status++;
             }
-            else if(!wait.isWaiting(10))
+            else if(!wait.isWaiting(5))
             {
                 status = 30;
             }
@@ -166,6 +167,13 @@ void sequence()
         
         case 10:    // Catch
             std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
+
+            if(is_first_inverse_kinematics)
+            {
+                start_pose = forwardKinematics();
+                start_time = ros::Time::now();
+                is_first_inverse_kinematics = false;
+            }
             
             // Liner Interpolation
             val = std::min(std::max((ros::Time::now() - start_time).toSec()/duration_time, 0.0), 1.0);
@@ -205,7 +213,6 @@ void sequence()
 
             target_theta = target_theta*180.0/M_PI;
 
-            std::cout << target_theta << std::endl;
             
             // Check
             for(int i = 0; i < 6; i++)
@@ -232,18 +239,16 @@ void sequence()
             // Exit
             if(!wait.isWaiting(5))
             {
-                trash_pose.orientation.w = -1;
-                trash_pose.position.x = 0.0;
-                trash_pose.position.y = 0.0;
-                trash_pose.position.z = 0.0;
-                
+                // trash_pose.orientation.w = 0.0;
+                is_first_inverse_kinematics = true;
+
                 status++;
             }
 
             break;
         
         case 15:    // PreRelease1
-            std::cout << "PRERELEASE1  PRERELEASE1  PRERELEASE1  PRERELEASE1" << std::endl;
+            std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << 0, 45, 45, 0, 90, 0;
 
             if(isInPosition(target_theta) && !wait.isWaiting(1))
@@ -253,7 +258,7 @@ void sequence()
             break;
         
         case 17:    // PreRelease2
-            std::cout << "PRERELEASE2  PRERELEASE2  PRERELEASE2  PRERELEASE2" << std::endl;
+            std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -120, -20, 110, -90, 80, 0;
 
             if(isInPosition(target_theta))
@@ -290,21 +295,21 @@ void sequence()
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             target_theta << -120, -20, 110, -90-shaker, 40, 0;
 
-            if(isInPosition(-120,-20,110,-90-shaker,40,0))
+            if(isInPosition(target_theta))
             {
                 status--;
             }
             break;
 
         case 25:    // PostRelease
-            std::cout << "POSTRELEASE  POSTRELEASE  POSTRELEASE  POSTRELEASE" << std::endl;
+            std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -60, -20, 110, -90, 80, 0;
 
-            if(scan_count > 5)
+            if(scan_count >= 2)
             {
-                status = 2;
+                status = 30;
             }
-            else if(isInPosition(-60,-20,110,-90,80,0) && !wait.isWaiting(1))
+            else if(isInPosition(target_theta) && !wait.isWaiting(1))
             {
                 status = 2;
             }
@@ -538,13 +543,20 @@ geometry_msgs::Pose forwardKinematics()
 {
     // Get Theta
     Eigen::Matrix<double, 6, 1> theta;
+
+    #ifndef SIMULATION
     theta << motor1.getPresentPosition(),
              motor2.getPresentPosition(),
              motor3.getPresentPosition(),
              motor4.getPresentPosition(),
              motor5.getPresentPosition(),
              motor6.getPresentPosition();
+    #endif
     
+    #ifdef SIMULATION
+    theta = target_theta;
+    #endif
+
     // Rotation
     Eigen::Matrix3d rotation[6];
     rotation[0] = rotationZ(theta(0,0));
