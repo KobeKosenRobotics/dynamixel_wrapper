@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   tf
+  dynamixel_sdk
 )
 
 catkin_package(
@@ -25,6 +26,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  "/usr/include/eigen3"
 )
 
 add_library(${PROJECT_NAME}
@@ -52,3 +54,18 @@ install(DIRECTORY include/${PROJECT_NAME}/
 
 #add_executable(position_control src/examples/position_control.cpp)
 #target_link_libraries(position_control ${catkin_LIBRARIES})
+
+add_executable(jacobi src/jacobi.cpp)
+target_link_libraries(jacobi ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(read_motor_angular src/read_motor_angular.cpp)
+target_link_libraries(read_motor_angular ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(open_manipulator_controller src/open_manipulator_controller.cpp)
+target_link_libraries(open_manipulator_controller ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(jacobi2 src/jacobi2.cpp)
+target_link_libraries(jacobi2 ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(arm_sequence src/arm_sequence.cpp)
+target_link_libraries(arm_sequence ${catkin_LIBRARIES} "/usr/include/eigen3")

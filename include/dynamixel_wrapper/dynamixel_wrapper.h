@@ -90,7 +90,7 @@ dynamixel_wrapper::dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_
 void dynamixel_wrapper::write(dynamixel_wrapper_config_item item, int value){
     int address = item.address;
     int byte_size = item.size;
-    //ROS_INFO("%d, %d, %d", address, byte_size, value);
+    if(address==-1 || byte_size==0) return;
     bool dxl_comm_result;
     if(byte_size==1){
         dxl_comm_result = dxl_base_->packetHandler->write1ByteTxRx(dxl_base_->portHandler, id_, address, value);
@@ -104,6 +104,7 @@ void dynamixel_wrapper::write(dynamixel_wrapper_config_item item, int value){
     }
     else{
         ROS_ERROR("Byte size is undefined");
+        ROS_ERROR("%d", address);
     }
     if (dxl_comm_result != COMM_SUCCESS) {
         ROS_ERROR("Failed to connect for Dynamixel ID %d", id_);
@@ -113,6 +114,7 @@ void dynamixel_wrapper::write(dynamixel_wrapper_config_item item, int value){
 uint32_t dynamixel_wrapper::read(dynamixel_wrapper_config_item item){
     int address = item.address;
     int byte_size = item.size;
+    // if(address==-1 || byte_size==0) return;
     uint8_t value8;
     uint16_t value16;
     uint32_t value32;
@@ -129,6 +131,7 @@ uint32_t dynamixel_wrapper::read(dynamixel_wrapper_config_item item){
     }
     else{
         ROS_ERROR("Byte size is undefined");
+        ROS_ERROR("%d", address);
         return 0;
     }
     return value32;
@@ -137,6 +140,7 @@ uint32_t dynamixel_wrapper::read(dynamixel_wrapper_config_item item){
 int32_t dynamixel_wrapper::read_signed(dynamixel_wrapper_config_item item){
     int address = item.address;
     int byte_size = item.size;
+    // if(address==-1 || byte_size==0) return;
     uint8_t value8;
     uint16_t value16;
     uint32_t value32;
@@ -158,6 +162,7 @@ int32_t dynamixel_wrapper::read_signed(dynamixel_wrapper_config_item item){
     }
     else{
         ROS_ERROR("Byte size is undefined");
+        ROS_ERROR("%d", address);
         return 0;
     }
     return result;
