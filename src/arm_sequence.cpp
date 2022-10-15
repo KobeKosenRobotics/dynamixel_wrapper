@@ -7,6 +7,10 @@
 */
  
 #include <ros/ros.h>
+
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
  
 #include <std_msgs/Bool.h>
 #include <std_msgs/Int16.h>
@@ -48,9 +52,11 @@ Eigen::Matrix3d rotationY(double theta);
 Eigen::Matrix3d rotationZ(double theta);
 geometry_msgs::Pose forwardKinematics();
 
+void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta);
+
 // Global Variables
 // Sequence
-int status = 10;
+int status = 0;
 int scan_count = 0;
 int shaker = 10;
 Wait wait, getIsInPos;    // getIsInPose->wait??
@@ -123,26 +129,26 @@ void sequence()
         case 0:    // Stay
             std::cout << "STAY  STAY  STAY  STAY" << std::endl;
             enable = false;
-            // target_theta << -90, 0, 140, 0, 40, 0;
+            target_theta << -90, 0, 140, 0, 40, 0;
             // setGoalPosition(target_theta);
-            motor1.setGoalPosition(-90);
-            motor2.setGoalPosition(0);
-            motor3.setGoalPosition(140);
-            motor4.setGoalPosition(0);
-            motor5.setGoalPosition(40);
-            motor6.setGoalPosition(0);
+            // motor1.setGoalPosition(-90);
+            // motor2.setGoalPosition(0);
+            // motor3.setGoalPosition(140);
+            // motor4.setGoalPosition(0);
+            // motor5.setGoalPosition(40);
+            // motor6.setGoalPosition(0);
             break;
 
         case 2:    // PreScan
             std::cout << "PRESCAN  PRESCAN  PRESCAN  PRESCAN" << std::endl;
-            // target_theta << 0, 45, 45, 0, 90, 0;
+            target_theta << 0, 45, 45, 0, 90, 0;
             // setGoalPosition(target_theta);
-            motor1.setGoalPosition(0);
-            motor2.setGoalPosition(45);
-            motor3.setGoalPosition(45);
-            motor4.setGoalPosition(0);
-            motor5.setGoalPosition(90);
-            motor6.setGoalPosition(0);
+            // motor1.setGoalPosition(0);
+            // motor2.setGoalPosition(45);
+            // motor3.setGoalPosition(45);
+            // motor4.setGoalPosition(0);
+            // motor5.setGoalPosition(90);
+            // motor6.setGoalPosition(0);
             if(isInPosition(0,45,45,0,90,0))
             {
                 status++;
@@ -219,10 +225,6 @@ void sequence()
             }
 
             // Output
-            if(is_valid)
-            {
-                setGoalPosition(target_theta);
-            }
             if(is_valid != is_valid_old)
             {
                 motor1.setLED(is_valid?0:255, is_valid?255:0, 0);
@@ -235,28 +237,28 @@ void sequence()
             is_valid_old = is_valid;
 
             // Exit
-            // if(wait.isWaiting(5))
-            // {
-            //     trash_pose.orientation.w = -1;
-            //     trash_pose.position.x = 0.0;
-            //     trash_pose.position.y = 0.0;
-            //     trash_pose.position.z = 0.0;
+            if(wait.isWaiting(5))
+            {
+                trash_pose.orientation.w = -1;
+                trash_pose.position.x = 0.0;
+                trash_pose.position.y = 0.0;
+                trash_pose.position.z = 0.0;
                 
-            //     status++;
-            // }
+                status++;
+            }
 
             break;
         
         case 15:    // PreRelease1
             std::cout << "PRERELEASE1  PRERELEASE1  PRERELEASE1  PRERELEASE1" << std::endl;
-            // target_theta << 0, 45, 45, 0, 90, 0;
+            target_theta << 0, 45, 45, 0, 90, 0;
             // setGoalPosition(target_theta);
-            motor1.setGoalPosition(0);
-            motor2.setGoalPosition(45);
-            motor3.setGoalPosition(45);
-            motor4.setGoalPosition(0);
-            motor5.setGoalPosition(90);
-            motor6.setGoalPosition(0);
+            // motor1.setGoalPosition(0);
+            // motor2.setGoalPosition(45);
+            // motor3.setGoalPosition(45);
+            // motor4.setGoalPosition(0);
+            // motor5.setGoalPosition(90);
+            // motor6.setGoalPosition(0);
             if(isInPosition(0,45,45,0,90,0) && !wait.isWaiting(1))
             {
                 status++;
@@ -265,14 +267,14 @@ void sequence()
         
         case 17:    // PreRelease2
             std::cout << "PRERELEASE2  PRERELEASE2  PRERELEASE2  PRERELEASE2" << std::endl;
-            // target_theta << -120, -20, 110, -90, 80, 0;
+            target_theta << -120, -20, 110, -90, 80, 0;
             // setGoalPosition(target_theta);
-            motor1.setGoalPosition(-120);
-            motor2.setGoalPosition(-20);
-            motor3.setGoalPosition(110);
-            motor4.setGoalPosition(-90);
-            motor5.setGoalPosition(80);
-            motor6.setGoalPosition(0);
+            // motor1.setGoalPosition(-120);
+            // motor2.setGoalPosition(-20);
+            // motor3.setGoalPosition(110);
+            // motor4.setGoalPosition(-90);
+            // motor5.setGoalPosition(80);
+            // motor6.setGoalPosition(0);
             if(isInPosition(-90,-20,110,-90,80,0))
             {
                 status++;
@@ -281,14 +283,14 @@ void sequence()
         
         case 20:    // Release
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
-            // target_theta << -120, -20, 110, -90, 40, 0;
+            target_theta << -120, -20, 110, -90, 40, 0;
             // setGoalPosition(target_theta);
-            motor1.setGoalPosition(-120);
-            motor2.setGoalPosition(-20);
-            motor3.setGoalPosition(110);
-            motor4.setGoalPosition(-90);
-            motor5.setGoalPosition(40);
-            motor6.setGoalPosition(0);
+            // motor1.setGoalPosition(-120);
+            // motor2.setGoalPosition(-20);
+            // motor3.setGoalPosition(110);
+            // motor4.setGoalPosition(-90);
+            // motor5.setGoalPosition(40);
+            // motor6.setGoalPosition(0);
             if(isInPosition(-120,-20,110,-90,40,0))
             {
                 status++;
@@ -297,14 +299,14 @@ void sequence()
         
         case 22:    // Shake
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
-            // target_theta << -120, -20, 110, -90+shaker, 40, 0;
+            target_theta << -120, -20, 110, -90+shaker, 40, 0;
             // setGoalPosition(target_theta);
-            motor1.setGoalPosition(-120);
-            motor2.setGoalPosition(-20);
-            motor3.setGoalPosition(110);
-            motor4.setGoalPosition(-90+shaker);
-            motor5.setGoalPosition(40);
-            motor6.setGoalPosition(0);
+            // motor1.setGoalPosition(-120);
+            // motor2.setGoalPosition(-20);
+            // motor3.setGoalPosition(110);
+            // motor4.setGoalPosition(-90+shaker);
+            // motor5.setGoalPosition(40);
+            // motor6.setGoalPosition(0);
             if(!wait.isWaiting(5))
             {
                 status+=2;
@@ -317,14 +319,14 @@ void sequence()
 
         case 23:    // Shake
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
-            // target_theta << -120, -20, 110, -90-shaker, 40, 0;
+            target_theta << -120, -20, 110, -90-shaker, 40, 0;
             // setGoalPosition(target_theta);
-            motor1.setGoalPosition(-120);
-            motor2.setGoalPosition(-20);
-            motor3.setGoalPosition(110);
-            motor4.setGoalPosition(-90-shaker);
-            motor5.setGoalPosition(40);
-            motor6.setGoalPosition(0);
+            // motor1.setGoalPosition(-120);
+            // motor2.setGoalPosition(-20);
+            // motor3.setGoalPosition(110);
+            // motor4.setGoalPosition(-90-shaker);
+            // motor5.setGoalPosition(40);
+            // motor6.setGoalPosition(0);
             if(isInPosition(-120,-20,110,-90-shaker,40,0))
             {
                 status--;
@@ -333,14 +335,14 @@ void sequence()
 
         case 25:    // PostRelease
             std::cout << "POSTRELEASE  POSTRELEASE  POSTRELEASE  POSTRELEASE" << std::endl;
-            // target_theta << -60, -20, 110, -90, 80, 0;
+            target_theta << -60, -20, 110, -90, 80, 0;
             // setGoalPosition(target_theta);
-            motor1.setGoalPosition(-60);
-            motor2.setGoalPosition(-20);
-            motor3.setGoalPosition(110);
-            motor4.setGoalPosition(-90);
-            motor5.setGoalPosition(80);
-            motor6.setGoalPosition(0);
+            // motor1.setGoalPosition(-60);
+            // motor2.setGoalPosition(-20);
+            // motor3.setGoalPosition(110);
+            // motor4.setGoalPosition(-90);
+            // motor5.setGoalPosition(80);
+            // motor6.setGoalPosition(0);
             if(scan_count > 5)
             {
                 status = 2;
@@ -434,6 +436,11 @@ int main(int argc, char **argv)
     while(nh.ok())
     {
         sequence();
+        if(is_valid)
+        {
+            setGoalPosition(target_theta);
+        }
+        tf_broadcaster(target_theta);
         
         state.data = status;
         state_pub.publish(state);
@@ -576,4 +583,109 @@ geometry_msgs::Pose forwardKinematics()
     pose.position.z = position(2,0);
 
     return pose;
+}
+
+void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
+{
+    theta = theta*M_PI/180.0;
+
+    static tf2_ros::TransformBroadcaster br;
+    static geometry_msgs::TransformStamped transformStamped;
+    static tf2::Quaternion q;
+    
+    // Joint 0
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "arm_base_link";
+    transformStamped.child_frame_id = "joint0";
+    transformStamped.transform.translation.x = 0.0;
+    transformStamped.transform.translation.y = 0.0;
+    transformStamped.transform.translation.z = 0.159;
+    
+    q.setRPY(0, 0, theta(0,0));
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+    
+    // Joint 1
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "joint0";
+    transformStamped.child_frame_id = "joint1";
+    transformStamped.transform.translation.x = 0.0;
+    transformStamped.transform.translation.y = 0.0;
+    transformStamped.transform.translation.z = 0.0;
+    
+    q.setRPY(0, theta(1,0), 0);
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
+    // Joint 2
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "joint1";
+    transformStamped.child_frame_id = "joint2";
+    transformStamped.transform.translation.x = 0.030;
+    transformStamped.transform.translation.y = 0.0;
+    transformStamped.transform.translation.z = 0.264;
+    
+    q.setRPY(0, theta(2,0), 0);
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
+    // Joint 3
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "joint2";
+    transformStamped.child_frame_id = "joint3";
+    transformStamped.transform.translation.x = -0.030;
+    transformStamped.transform.translation.y = 0.0;
+    transformStamped.transform.translation.z = 0.258;
+    
+    q.setRPY(0, 0, theta(3,0));
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
+    // Joint 4
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "joint3";
+    transformStamped.child_frame_id = "joint4";
+    transformStamped.transform.translation.x = 0.0;
+    transformStamped.transform.translation.y = 0.0;
+    transformStamped.transform.translation.z = 0.0;
+    
+    q.setRPY(0, theta(4,0), 0);
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
+    // Joint 5
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "joint4";
+    transformStamped.child_frame_id = "joint5";
+    transformStamped.transform.translation.x = 0.0;
+    transformStamped.transform.translation.y = 0.0;
+    transformStamped.transform.translation.z = 0.123;
+    
+    q.setRPY(0, 0, theta(5,0));
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
 }
