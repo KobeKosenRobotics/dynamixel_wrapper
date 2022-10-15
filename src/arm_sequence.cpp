@@ -28,7 +28,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-// #define SIMULATION
+#define SIMULATION
 
 // Prototype Declearation
 class Wait
@@ -68,8 +68,8 @@ Wait sim_wait;
 #endif
 
 // Arm Property
-Eigen::Matrix<double, 3, 1> link0, link1, link2, link3, link4, link5;
-double l1 = 0.0, l2 = sqrt(pow(264.0,2.0)+pow(30.0,2.0)), l3 = sqrt(pow(258.0,2.0)+pow(30.0,2.0)), l4 = 0.0, l5 = 123.0, l6 = 0.0;
+Eigen::Matrix<double, 3, 1> link0, link1, link2, link3, link4, link5, link_offset;
+double l1 = 0.0, l2 = sqrt(pow(264.0,2.0)+pow(30.0,2.0)), l3 = sqrt(pow(258.0,2.0)+pow(30.0,2.0)), l4 = 0.0, l5 = 123.0, l6 = 0.0, l_offset = 159.0;
 
 // Enable
 bool enable;
@@ -182,7 +182,7 @@ void sequence()
             z = now_pose.position.z = start_pose.position.z*(1.0-val) + target_pose.position.z*val;
 
             // Intermediate Calculation
-            virtual_hight = z+l5;
+            virtual_hight = z+l5-l_offset;
             radius = sqrt(x*x+y*y);
             bowstring = sqrt(virtual_hight*virtual_hight+radius*radius);
             alpha = acos((bowstring*bowstring+l2*l2-l3*l3)/(2*bowstring*l2));
@@ -354,6 +354,7 @@ int main(int argc, char **argv)
     link3 << 0.0, 0.0, l4;
     link4 << 0.0, 0.0, l5;    // Without End Effector
     link5 << 0.0, 0.0, l6;
+    link_offset << 0.0, 0.0, l_offset;
 
     // Motor Set Up
     motor1.setTorqueEnable(false);
@@ -568,7 +569,7 @@ geometry_msgs::Pose forwardKinematics()
 
     // Position
     Eigen::Matrix<double, 3, 1> position;
-    position = rotation[0]*(link0+rotation[1]*(link1+rotation[2]*(link2+rotation[3]*(link3+rotation[4]*(link4+rotation[5]*link5)))));
+    position = link_offset+rotation[0]*(link0+rotation[1]*(link1+rotation[2]*(link2+rotation[3]*(link3+rotation[4]*(link4+rotation[5]*link5)))));
 
     // Matrix To Pose
     geometry_msgs::Pose pose;
