@@ -53,6 +53,7 @@ Eigen::Matrix3d rotationX(double theta);
 Eigen::Matrix3d rotationY(double theta);
 Eigen::Matrix3d rotationZ(double theta);
 geometry_msgs::Pose forwardKinematics();
+void inverseKinematics();
 
 void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta);
 
@@ -78,7 +79,7 @@ bool enable;
 geometry_msgs::Pose trash_pose;
 bool is_scanning = true;
 ros::Time start_time;
-geometry_msgs::Pose target_pose,start_pose, now_pose;
+geometry_msgs::Pose target_pose, start_pose, now_pose;
 double val, x, y, z, virtual_hight, radius, bowstring, alpha, beta, delta;
 bool is_valid = true, is_valid_old = true;
 Eigen::Matrix<double, 6, 1> target_theta;    // target_theta: to motor, theta: from sensor
@@ -121,7 +122,7 @@ void trash_pose_cb(geometry_msgs::Pose::ConstPtr msg)
         if(msg->orientation.w > 0.5)    // exist:w=1, not exsist:w=-1;
         {
             trash_pose = *msg;
-            target_pose = *msg;
+            // target_pose = *msg;
             if(msg->orientation.x > 3.0)
             {
                 duration_time = msg->orientation.x;
@@ -173,78 +174,12 @@ void sequence()
         case 10:    // Catch
             std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
 
-            if(is_first_inverse_kinematics)
-            {
-                start_pose = forwardKinematics();
-                start_time = ros::Time::now();
-                is_first_inverse_kinematics = false;
-            }
-            
-            // Liner Interpolation
-            val = std::min(std::max((ros::Time::now() - start_time).toSec()/duration_time, 0.0), 1.0);
-            x = now_pose.position.x = start_pose.position.x*(1.0-val) + target_pose.position.x*val;
-            y = now_pose.position.y = start_pose.position.y*(1.0-val) + target_pose.position.y*val;
-            z = now_pose.position.z = start_pose.position.z*(1.0-val) + target_pose.position.z*val;
-
-            // Intermediate Calculation
-            virtual_hight = z+l5-l_offset;
-            radius = sqrt(x*x+y*y);
-            bowstring = sqrt(virtual_hight*virtual_hight+radius*radius);
-            alpha = acos((bowstring*bowstring+l2*l2-l3*l3)/(2*bowstring*l2));
-            beta = acos((l2*l2+l3*l3-bowstring*bowstring)/(2*l2*l3));
-            if(virtual_hight>0)
-            {
-                delta = atan(radius/virtual_hight);
-            }
-            else if(virtual_hight)
-            {
-                delta = M_PI+atan(radius/virtual_hight);
-            }
-
-            // Target Theta
-            if(x>0)
-            {
-                target_theta(0,0) = atan(y/x);
-            }
-            else if(x<0)
-            {
-                target_theta(0,0) = -atan(y/x);
-            }
-            target_theta(1,0) = delta-alpha;
-            target_theta(2,0) = M_PI-beta;
-            target_theta(3,0) = 0;
-            target_theta(4,0) = M_PI-target_theta(1,0)-target_theta(2,0);
-            target_theta(5,0) = 0;
-
-            target_theta = target_theta*180.0/M_PI;
-
-            
-            // Check
-            for(int i = 0; i < 6; i++)
-            {
-                if(isnan(target_theta(i,0)))
-                {
-                    is_valid = false;
-                    false;
-                }
-            }
-
-            // LED
-            if(is_valid != is_valid_old)
-            {
-                motor1.setLED(is_valid?0:255, is_valid?255:0, 0);
-                motor2.setLED(is_valid?0:255, is_valid?255:0, 0);
-                motor3.setLED(is_valid?0:255, is_valid?255:0, 0);
-                motor4.setLED(is_valid?0:255, is_valid?255:0, 0);
-                motor5.setLED(is_valid?0:255, is_valid?255:0, 0);
-                motor6.setLED(is_valid?0:255, is_valid?255:0, 0);
-            }
-            is_valid_old = is_valid;
+            target_pose = trash_pose;
+            inverseKinematics();
 
             // Exit
             if(!wait.isWaiting(5))
             {
-                // trash_pose.orientation.w = 0.0;
                 is_first_inverse_kinematics = true;
 
                 status++;
@@ -583,6 +518,78 @@ geometry_msgs::Pose forwardKinematics()
     pose.position.z = position(2,0);
 
     return pose;
+}
+
+void inverseKinematics()
+{
+    // Start
+    if(is_first_inverse_kinematics)
+    {
+        start_pose = forwardKinematics();
+        start_time = ros::Time::now();
+        is_first_inverse_kinematics = false;
+    }
+    
+    // Liner Interpolation
+    val = std::min(std::max((ros::Time::now() - start_time).toSec()/duration_time, 0.0), 1.0);
+    x = now_pose.position.x = start_pose.position.x*(1.0-val) + target_pose.position.x*val;
+    y = now_pose.position.y = start_pose.position.y*(1.0-val) + target_pose.position.y*val;
+    z = now_pose.position.z = start_pose.position.z*(1.0-val) + target_pose.position.z*val;
+
+    // Intermediate Calculation
+    virtual_hight = z+l5-l_offset;
+    radius = sqrt(x*x+y*y);
+    bowstring = sqrt(virtual_hight*virtual_hight+radius*radius);
+    alpha = acos((bowstring*bowstring+l2*l2-l3*l3)/(2*bowstring*l2));
+    beta = acos((l2*l2+l3*l3-bowstring*bowstring)/(2*l2*l3));
+    if(virtual_hight>0)
+    {
+        delta = atan(radius/virtual_hight);
+    }
+    else if(virtual_hight)
+    {
+        delta = M_PI+atan(radius/virtual_hight);
+    }
+
+    // Target Theta
+    if(x>0)
+    {
+        target_theta(0,0) = atan(y/x);
+    }
+    else if(x<0)
+    {
+        target_theta(0,0) = -atan(y/x);
+    }
+    target_theta(1,0) = delta-alpha;
+    target_theta(2,0) = M_PI-beta;
+    target_theta(3,0) = 0;
+    target_theta(4,0) = M_PI-target_theta(1,0)-target_theta(2,0);
+    target_theta(5,0) = 0;
+
+    target_theta = target_theta*180.0/M_PI;
+
+    
+    // Check
+    for(int i = 0; i < 6; i++)
+    {
+        if(isnan(target_theta(i,0)))
+        {
+            is_valid = false;
+            false;
+        }
+    }
+
+    // LED
+    if(is_valid != is_valid_old)
+    {
+        motor1.setLED(is_valid?0:255, is_valid?255:0, 0);
+        motor2.setLED(is_valid?0:255, is_valid?255:0, 0);
+        motor3.setLED(is_valid?0:255, is_valid?255:0, 0);
+        motor4.setLED(is_valid?0:255, is_valid?255:0, 0);
+        motor5.setLED(is_valid?0:255, is_valid?255:0, 0);
+        motor6.setLED(is_valid?0:255, is_valid?255:0, 0);
+    }
+    is_valid_old = is_valid;
 }
 
 void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
