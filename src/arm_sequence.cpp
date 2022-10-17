@@ -115,16 +115,20 @@ void enable_cb(std_msgs::Bool::ConstPtr msg)
 }
 void trash_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
-    if(is_scanning && msg->orientation.w > 0.5)    // exist:w=1, not exsist:w=-1;
+    if(is_scanning)
     {
-        if(*msg == target_pose) return;
-        trash_pose = *msg;
-        target_pose = *msg;
-        if(msg->orientation.x > 3.0)
+        trash_pose.orientation.w = msg->orientation.w;
+        if(msg->orientation.w > 0.5)    // exist:w=1, not exsist:w=-1;
         {
-            duration_time = msg->orientation.x;
+            trash_pose = *msg;
+            target_pose = *msg;
+            if(msg->orientation.x > 3.0)
+            {
+                duration_time = msg->orientation.x;
+            }
         }
     }
+    
 }
 
 // Sequence
@@ -152,6 +156,7 @@ void sequence()
         case 5:    // Scan
             std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
             is_scanning = true;
+            std::cout << trash_pose.orientation.w << std::endl;
             if(trash_pose.orientation.w > 0.5 && !wait.isWaiting(3))
             {
                 is_scanning = false;
