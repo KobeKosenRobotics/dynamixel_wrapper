@@ -46,7 +46,8 @@ class Wait
 
 
 void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta);
-bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6);
+// bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6);
+Eigen::Matrix<double, 6, 1> getPresentPosition();
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta);
 
 Eigen::Matrix3d rotationX(double theta);
@@ -69,8 +70,9 @@ Wait sim_wait;
 #endif
 
 // Arm Property
-Eigen::Matrix<double, 3, 1> link0, link1, link2, link3, link4, link5, link_offset;
-double l1 = 0.0, l2 = sqrt(pow(264.0,2.0)+pow(30.0,2.0)), l3 = sqrt(pow(258.0,2.0)+pow(30.0,2.0)), l4 = 0.0, l5 = 123.0, l6 = 0.0, l_offset = 159.0;
+Eigen::Matrix<double, 3, 1> link_offset, link0, link1, link2, link3, link4, link5;
+double l_offset, l0, l1, l2, l3, l4, l5;
+Eigen::Matrix<double, 6, 1> homing_offset;
 
 // Enable
 bool enable;
@@ -90,12 +92,12 @@ bool is_first_inverse_kinematics = true;
 std::string port_name("/dev/ttyUSB0");
 int baudrate=1000000;
 dynamixel_wrapper::dynamixel_wrapper_base dxl_base(port_name, baudrate);
-dynamixel_wrapper::dynamixel_wrapper motor1(1, dxl_base, dynamixel_wrapper::PH54_200_S500_R, 4);
-dynamixel_wrapper::dynamixel_wrapper motor2(2, dxl_base, dynamixel_wrapper::H54_200_S500_R, 4);
-dynamixel_wrapper::dynamixel_wrapper motor3(3, dxl_base, dynamixel_wrapper::H54_100_S500_R, 4);
-dynamixel_wrapper::dynamixel_wrapper motor4(4, dxl_base, dynamixel_wrapper::H54_100_S500_R, 4);
-dynamixel_wrapper::dynamixel_wrapper motor5(5, dxl_base, dynamixel_wrapper::H42_020_S300_R, 4);
-dynamixel_wrapper::dynamixel_wrapper motor6(6, dxl_base, dynamixel_wrapper::H42_020_S300_R, 4);
+dynamixel_wrapper::dynamixel_wrapper motor0(1, dxl_base, dynamixel_wrapper::PH54_200_S500_R, 4);
+dynamixel_wrapper::dynamixel_wrapper motor1(2, dxl_base, dynamixel_wrapper::H54_200_S500_R, 4);
+dynamixel_wrapper::dynamixel_wrapper motor2(3, dxl_base, dynamixel_wrapper::H54_100_S500_R, 4);
+dynamixel_wrapper::dynamixel_wrapper motor3(4, dxl_base, dynamixel_wrapper::H54_100_S500_R, 4);
+dynamixel_wrapper::dynamixel_wrapper motor4(5, dxl_base, dynamixel_wrapper::H42_020_S300_R, 4);
+dynamixel_wrapper::dynamixel_wrapper motor5(6, dxl_base, dynamixel_wrapper::H42_020_S300_R, 4);
 
 // Publisher
 std_msgs::Int16 state;
@@ -143,11 +145,17 @@ void sequence()
             scan_count = 0;
             // target_theta << -90, 0, 140, 0, 40, 0;
             target_theta << 0, 0, 0, 0, 0, 0;
+            target_theta *= M_PI/180.0;
+
+            now_pose = forwardKinematics();
+            std::cout << now_pose << std::endl;
+
             break;
 
         case 2:    // PreScan
             std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
             target_theta << 0, 45, 45, 0, 90, 0;
+            target_theta *= M_PI/180.0;
 
             if(isInPosition(target_theta))
             {
@@ -191,6 +199,7 @@ void sequence()
         case 15:    // PreRelease1
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << 0, 45, 45, 0, 90, 0;
+            target_theta *= M_PI/180.0;
 
             if(isInPosition(target_theta) && !wait.isWaiting(1))
             {
@@ -201,6 +210,7 @@ void sequence()
         case 17:    // PreRelease2
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -120, -20, 110, -90, 80, 0;
+            target_theta *= M_PI/180.0;
 
             if(isInPosition(target_theta))
             {
@@ -211,6 +221,7 @@ void sequence()
         case 20:    // Release
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -120, -20, 110, -90, 40, 0;
+            target_theta *= M_PI/180.0;
 
             if(isInPosition(target_theta))
             {
@@ -221,12 +232,13 @@ void sequence()
         case 22:    // Shake
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             target_theta << -120, -20, 110, -90+shaker, 40, 0;
+            target_theta *= M_PI/180.0;
 
             if(!wait.isWaiting(5))
             {
                 status+=2;
             }
-            if(isInPosition(-120,-20,110,-90+shaker,40,0))
+            if(isInPosition(target_theta))
             {
                 status++;
             }
@@ -235,6 +247,7 @@ void sequence()
         case 23:    // Shake
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             target_theta << -120, -20, 110, -90-shaker, 40, 0;
+            target_theta *= M_PI/180.0;
 
             if(isInPosition(target_theta))
             {
@@ -245,6 +258,7 @@ void sequence()
         case 25:    // PostRelease
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -60, -20, 110, -90, 80, 0;
+            target_theta *= M_PI/180.0;
 
             if(scan_count >= 2)
             {
@@ -259,6 +273,7 @@ void sequence()
         case 30:    // Finish
             std::cout << "FINISH  FINISH  FINISH  FINISH" << std::endl;
             target_theta << -90, 0, 140, 0, 40, 0;
+            target_theta *= M_PI/180.0;
 
             if(!wait.isWaiting(5))
             {
@@ -288,51 +303,63 @@ int main(int argc, char **argv)
     ros::Subscriber enable_sub = nh.subscribe<std_msgs::Bool>("enable", 10, enable_cb);
     ros::Subscriber trash_sub = nh.subscribe<geometry_msgs::Pose>("trash_pose", 10, trash_pose_cb);
     
-    // Link Matrix
-    link0 << 0.0, 0.0, l1;
-    link1 << 0.0, 0.0, l2;
-    link2 << 0.0, 0.0, l3;
-    link3 << 0.0, 0.0, l4;
-    link4 << 0.0, 0.0, l5;    // Without End Effector
-    link5 << 0.0, 0.0, l6;
-    link_offset << 0.0, 0.0, l_offset;
+    // Arm Property
+    link_offset << 0.0, 0.0, 159.0;
+    link0 << 0.0, 0.0, 0.0;
+    link1 << 30.0, 0.0, 264.0;
+    link2 << -30.0, 0.0, 258.0;
+    link3 << 0.0, 0.0, 0.0;
+    link4 << 0.0, 0.0, 123.0;    // Without End Effector
+    link5 << 0.0, 0.0, 0.0;
 
+    l_offset = sqrt(pow(link_offset(0,0),2.0)+pow(link_offset(1,0),2.0)+pow(link_offset(2,0),2.0));
+    l0 = sqrt(pow(link0(0,0),2.0)+pow(link0(1,0),2.0)+pow(link0(2,0),2.0));
+    l1 = sqrt(pow(link1(0,0),2.0)+pow(link1(1,0),2.0)+pow(link1(2,0),2.0));
+    l2 = sqrt(pow(link2(0,0),2.0)+pow(link2(1,0),2.0)+pow(link2(2,0),2.0));
+    l3 = sqrt(pow(link3(0,0),2.0)+pow(link3(1,0),2.0)+pow(link3(2,0),2.0));
+    l4 = sqrt(pow(link4(0,0),2.0)+pow(link4(1,0),2.0)+pow(link4(2,0),2.0));
+    l5 = sqrt(pow(link5(0,0),2.0)+pow(link5(1,0),2.0)+pow(link5(2,0),2.0));
+
+    homing_offset << 0.0, 7.20342, -7.20342-7.36946, 0.0, 7.36946, 0.0;
+    
     // Motor Set Up
+    motor0.setTorqueEnable(false);
+    motor0.setVelocityLimit(15);
+    motor0.setHomingOffset(homing_offset(0,0));
+    motor0.setPositionGain(15, 0, 0);
+    motor0.setTorqueEnable(true);
+    
     motor1.setTorqueEnable(false);
     motor1.setVelocityLimit(15);
-    motor1.setHomingOffset(0);
+    motor1.setHomingOffset(36.3+homing_offset(1,0));
     motor1.setPositionGain(15, 0, 0);
     motor1.setTorqueEnable(true);
     
     motor2.setTorqueEnable(false);
     motor2.setVelocityLimit(15);
-    motor2.setHomingOffset(36.3+7.20342);
+    motor2.setHomingOffset(45+homing_offset(2,0));
     motor2.setPositionGain(15, 0, 0);
     motor2.setTorqueEnable(true);
     
     motor3.setTorqueEnable(false);
     motor3.setVelocityLimit(15);
-    motor3.setHomingOffset(45-7.20342-7.36946);
+    motor3.setHomingOffset(homing_offset(3,0));
     motor3.setPositionGain(15, 0, 0);
     motor3.setTorqueEnable(true);
     
     motor4.setTorqueEnable(false);
     motor4.setVelocityLimit(15);
-    motor4.setHomingOffset(0);
+    motor4.setHomingOffset(homing_offset(4,0));
     motor4.setPositionGain(15, 0, 0);
     motor4.setTorqueEnable(true);
     
     motor5.setTorqueEnable(false);
     motor5.setVelocityLimit(15);
-    motor5.setHomingOffset(7.36946);
-    motor5.setPositionGain(15, 0, 0);
+    motor5.setHomingOffset(homing_offset(5,0));
+    motor3.setPositionGain(15, 0, 0);
     motor5.setTorqueEnable(true);
-    
-    motor6.setTorqueEnable(false);
-    motor6.setVelocityLimit(15);
-    motor6.setHomingOffset(0);
-    motor4.setPositionGain(15, 0, 0);
-    motor6.setTorqueEnable(true);
+
+    homing_offset *= M_PI/180.0;
     
     // Start Time
     start_time = ros::Time::now();
@@ -356,12 +383,12 @@ int main(int argc, char **argv)
     }
 
     // Torque Off
+    motor0.setTorqueEnable(false);
     motor1.setTorqueEnable(false);
     motor2.setTorqueEnable(false);
     motor3.setTorqueEnable(false);
     motor4.setTorqueEnable(false);
     motor5.setTorqueEnable(false);
-    motor6.setTorqueEnable(false);
 
     return 0;
 }
@@ -399,38 +426,45 @@ void Wait::reset()
 // Collective Instruction
 void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta)
 {
-    motor1.setGoalPosition(target_theta(0,0));
-    motor2.setGoalPosition(target_theta(1,0));
-    motor3.setGoalPosition(target_theta(2,0));
-    motor4.setGoalPosition(target_theta(3,0));
-    motor5.setGoalPosition(target_theta(4,0));
-    motor6.setGoalPosition(target_theta(5,0));
+    target_theta *= 180.0/M_PI;
+    motor0.setGoalPosition(target_theta(0,0));
+    motor1.setGoalPosition(target_theta(1,0));
+    motor2.setGoalPosition(target_theta(2,0));
+    motor3.setGoalPosition(target_theta(3,0));
+    motor4.setGoalPosition(target_theta(4,0));
+    motor5.setGoalPosition(target_theta(5,0));
 }
-bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6)
+// bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6)
+// {
+//     #ifdef SIMULATION
+//     if(!sim_wait.isWaiting(1))
+//     {
+//         sim_wait.reset();
+//         return true;
+//     }
+//     #endif
+
+//     #ifndef SIMULATION
+//     double dt1, dt2, dt3, dt4, dt5, dt6;
+//     dt1 = fabs(t1 - motor0.getPresentPosition());
+//     dt2 = fabs(t2 - motor1.getPresentPosition());
+//     dt3 = fabs(t3 - motor2.getPresentPosition());
+//     dt4 = fabs(t4 - motor3.getPresentPosition());
+//     dt5 = fabs(t5 - motor4.getPresentPosition());
+//     dt6 = fabs(t6 - motor5.getPresentPosition());
+//     if(dt2 < 1 && dt2 < 1 && dt3 < 1 && dt4 < 1 && dt5 < 1 && dt6 < 1) return true;
+//     #endif
+
+//     return false;
+// }
+Eigen::Matrix<double, 6, 1> getPresentPosition()
 {
-    #ifdef SIMULATION
-    if(!sim_wait.isWaiting(1))
-    {
-        sim_wait.reset();
-        return true;
-    }
-    #endif
-
-    #ifndef SIMULATION
-    double dt1, dt2, dt3, dt4, dt5, dt6;
-    dt1 = fabs(t1 - motor1.getPresentPosition());
-    dt2 = fabs(t2 - motor2.getPresentPosition());
-    dt3 = fabs(t3 - motor3.getPresentPosition());
-    dt4 = fabs(t4 - motor4.getPresentPosition());
-    dt5 = fabs(t5 - motor5.getPresentPosition());
-    dt6 = fabs(t6 - motor6.getPresentPosition());
-    if(dt2 < 1 && dt2 < 1 && dt3 < 1 && dt4 < 1 && dt5 < 1 && dt6 < 1) return true;
-    #endif
-
-    return false;
+    
 }
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
 {
+    target_theta *= 180.0/M_PI;
+
     #ifdef SIMULATION
     if(!sim_wait.isWaiting(1))
     {
@@ -441,12 +475,12 @@ bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
 
     #ifndef SIMULATION
     double dt1, dt2, dt3, dt4, dt5, dt6;
-    dt1 = fabs(target_theta(0,0)- motor1.getPresentPosition());
-    dt2 = fabs(target_theta(1,0) - motor2.getPresentPosition());
-    dt3 = fabs(target_theta(2,0) - motor3.getPresentPosition());
-    dt4 = fabs(target_theta(3,0) - motor4.getPresentPosition());
-    dt5 = fabs(target_theta(4,0) - motor5.getPresentPosition());
-    dt6 = fabs(target_theta(5,0) - motor6.getPresentPosition());
+    dt1 = fabs(target_theta(0,0)- motor0.getPresentPosition());
+    dt2 = fabs(target_theta(1,0) - motor1.getPresentPosition());
+    dt3 = fabs(target_theta(2,0) - motor2.getPresentPosition());
+    dt4 = fabs(target_theta(3,0) - motor3.getPresentPosition());
+    dt5 = fabs(target_theta(4,0) - motor4.getPresentPosition());
+    dt6 = fabs(target_theta(5,0) - motor5.getPresentPosition());
     if(dt2 < 1 && dt2 < 1 && dt3 < 1 && dt4 < 1 && dt5 < 1 && dt6 < 1) return true;
     #endif
     
@@ -455,58 +489,61 @@ bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
 }
 
 // Basic Rotation
-Eigen::Matrix3d rotationX(double theta)
-{
-   Eigen::Matrix3d rotation;
-   rotation << 1.0, 0.0       ,  0.0       ,
-               0.0, cos(theta), -sin(theta),
-               0.0, sin(theta),  cos(theta);
-   return rotation;
+Eigen::Matrix3d rotationX(double global_theta)
+{    
+    Eigen::Matrix3d rotation;
+    rotation << 1.0, 0.0              ,  0.0              ,
+                0.0, cos(global_theta), -sin(global_theta),
+                0.0, sin(global_theta),  cos(global_theta);
+    return rotation;
 }
-Eigen::Matrix3d rotationY(double theta)
+Eigen::Matrix3d rotationY(double global_theta)
 {
-   Eigen::Matrix3d rotation;
-   rotation <<  cos(theta), 0.0, sin(theta),
-                0.0       , 1.0, 0.0,
-               -sin(theta), 0.0, cos(theta);
-   return rotation;
+    Eigen::Matrix3d rotation;
+    rotation <<  cos(global_theta), 0.0, sin(global_theta),
+                    0.0           , 1.0, 0.0              ,
+                -sin(global_theta), 0.0, cos(global_theta);
+    return rotation;
 }
-Eigen::Matrix3d rotationZ(double theta)
+Eigen::Matrix3d rotationZ(double global_theta)
 {
-   Eigen::Matrix3d rotation;
-   rotation << cos(theta), -sin(theta), 0.0,
-               sin(theta),  cos(theta), 0.0,
-               0.0       , 0.0        , 1.0;
-   return rotation;
+    Eigen::Matrix3d rotation;
+    rotation << cos(global_theta), -sin(global_theta), 0.0,
+                sin(global_theta),  cos(global_theta), 0.0,
+                0.0              , 0.0               , 1.0;
+    return rotation;
 }
 
 // Forward Kinematics
 geometry_msgs::Pose forwardKinematics()
 {
     // Get Theta
-    Eigen::Matrix<double, 6, 1> theta;
+    Eigen::Matrix<double, 6, 1> theta, global_theta;
 
     #ifndef SIMULATION
-    theta << motor1.getPresentPosition(),
+    theta << motor0.getPresentPosition(),
+             motor1.getPresentPosition(),
              motor2.getPresentPosition(),
              motor3.getPresentPosition(),
              motor4.getPresentPosition(),
-             motor5.getPresentPosition(),
-             motor6.getPresentPosition();
+             motor5.getPresentPosition();
+    theta *= M_PI/180.0;
     #endif
     
     #ifdef SIMULATION
     theta = target_theta;
     #endif
 
+    global_theta = theta-homing_offset;
+
     // Rotation
     Eigen::Matrix3d rotation[6];
-    rotation[0] = rotationZ(theta(0,0));
-    rotation[1] = rotationY(theta(1,0));
-    rotation[2] = rotationY(theta(2,0));
-    rotation[3] = rotationZ(theta(3,0));
-    rotation[4] = rotationY(theta(4,0));
-    rotation[5] = rotationZ(theta(5,0));
+    rotation[0] = rotationZ(global_theta(0,0));
+    rotation[1] = rotationY(global_theta(1,0));
+    rotation[2] = rotationY(global_theta(2,0));
+    rotation[3] = rotationZ(global_theta(3,0));
+    rotation[4] = rotationY(global_theta(4,0));
+    rotation[5] = rotationZ(global_theta(5,0));
 
     // Position
     Eigen::Matrix<double, 3, 1> position;
@@ -538,11 +575,11 @@ void inverseKinematics()
     z = now_pose.position.z = start_pose.position.z*(1.0-val) + target_pose.position.z*val;
 
     // Intermediate Calculation
-    virtual_hight = z+l5-l_offset;
+    virtual_hight = z+l4-l_offset;
     radius = sqrt(x*x+y*y);
     bowstring = sqrt(virtual_hight*virtual_hight+radius*radius);
-    alpha = acos((bowstring*bowstring+l2*l2-l3*l3)/(2*bowstring*l2));
-    beta = acos((l2*l2+l3*l3-bowstring*bowstring)/(2*l2*l3));
+    alpha = acos((bowstring*bowstring+l1*l1-l2*l2)/(2*bowstring*l1));
+    beta = acos((l1*l1+l2*l2-bowstring*bowstring)/(2*l1*l2));
     if(virtual_hight>0)
     {
         delta = atan(radius/virtual_hight);
@@ -566,9 +603,6 @@ void inverseKinematics()
     target_theta(3,0) = 0;
     target_theta(4,0) = M_PI-target_theta(1,0)-target_theta(2,0);
     target_theta(5,0) = 0;
-
-    target_theta = target_theta*180.0/M_PI;
-
     
     // Check
     for(int i = 0; i < 6; i++)
@@ -583,19 +617,19 @@ void inverseKinematics()
     // LED
     if(is_valid != is_valid_old)
     {
+        motor0.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor1.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor2.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor3.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor4.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor5.setLED(is_valid?0:255, is_valid?255:0, 0);
-        motor6.setLED(is_valid?0:255, is_valid?255:0, 0);
     }
     is_valid_old = is_valid;
 }
 
 void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
 {
-    theta = theta*M_PI/180.0;
+    Eigen::Matrix<double, 6, 1> global_theta = theta-homing_offset;
 
     static tf2_ros::TransformBroadcaster br;
     static geometry_msgs::TransformStamped transformStamped;
@@ -625,7 +659,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.0;
     
-    q.setRPY(0, theta(1,0)-0.125723, 0);
+    q.setRPY(0, theta(1,0), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -641,7 +675,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.264;
     
-    q.setRPY(0, theta(2,0)+0.125723+0.128621, 0);
+    q.setRPY(0, theta(2,0), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -673,7 +707,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.0;
     
-    q.setRPY(0, theta(4,0)-0.128621, 0);
+    q.setRPY(0, theta(4,0), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
