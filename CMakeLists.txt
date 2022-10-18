@@ -69,3 +69,6 @@ target_link_libraries(jacobi2 ${catkin_LIBRARIES} "/usr/include/eigen3")
 
 add_executable(arm_sequence src/arm_sequence.cpp)
 target_link_libraries(arm_sequence ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(liner_interpolation src/liner_interpolation.cpp)
+target_link_libraries(liner_interpolation ${catkin_LIBRARIES} "/usr/include/eigen3")
