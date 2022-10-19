@@ -48,6 +48,7 @@ void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta);
 // bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6);
 Eigen::Matrix<double, 6, 1> getPresentPosition();
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta);
+void setTargetPose(double x, double y, double z);
 
 Eigen::Matrix3d rotationX(double theta);
 Eigen::Matrix3d rotationY(double theta);
@@ -143,9 +144,12 @@ void sequence()
             enable = false;
             scan_count = 0;
             // target_theta << -90, 0, 140, 0, 40, 0;
-            target_theta << 0, 0, 0, 0, 0, 0;
-            target_theta *= M_PI/180.0;
-
+            // target_theta << 0, 0, 0, 0, 0, 0;
+            // target_theta *= M_PI/180.0;
+            
+            setTargetPose(0.0, -267.0, 103.0);
+            inverseKinematics();
+            
             break;
 
         case 2:    // PreScan
@@ -268,8 +272,11 @@ void sequence()
 
         case 30:    // Finish
             std::cout << "FINISH  FINISH  FINISH  FINISH" << std::endl;
-            target_theta << -90, 0, 140, 0, 40, 0;
-            target_theta *= M_PI/180.0;
+            // target_theta << -90, 0, 140, 0, 40, 0;
+            // target_theta *= M_PI/180.0;
+
+            setTargetPose(0.0, -267.0, 103.0);
+            inverseKinematics();
 
             if(!wait.isWaiting(5))
             {
@@ -279,6 +286,7 @@ void sequence()
             
         default:
             wait.reset();
+            is_first_inverse_kinematics = true;
             status++;
             break;
     }
@@ -485,6 +493,13 @@ bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
     #endif
     
     return false;
+}
+
+void setTargetPose(double x, double y, double z)
+{
+    target_pose.position.x = x;
+    target_pose.position.y = y;
+    target_pose.position.z = z;
 }
 
 // Basic Rotation
