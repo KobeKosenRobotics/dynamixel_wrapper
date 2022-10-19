@@ -316,7 +316,8 @@ int main(int argc, char **argv)
     l4 = sqrt(pow(link4(0,0),2.0)+pow(link4(1,0),2.0)+pow(link4(2,0),2.0));
     l5 = sqrt(pow(link5(0,0),2.0)+pow(link5(1,0),2.0)+pow(link5(2,0),2.0));
 
-    homing_offset << 0.0, 7.20342, -7.20342-7.36946, 0.0, 7.36946, 0.0;
+    homing_offset << 0.0, atan2(30.0,264.0), -atan2(30.0,264.0)+atan2(-30.0,258.0), 0.0, -atan2(-30.0,258.0), 0.0;
+    homing_offset *= 180.0/M_PI;
     
     // Motor Set Up
     motor0.setTorqueEnable(false);
