@@ -339,6 +339,9 @@ int main(int argc, char **argv)
     while(nh.ok())
     {
         sequence();
+        now_pose = forwardKinematics();
+        std::cout << now_pose << std::endl;
+
         if(is_valid)
         {
             #ifndef SIMULATION
@@ -532,9 +535,9 @@ void inverseKinematics()
     
     // Liner Interpolation
     val = std::min(std::max((ros::Time::now() - start_time).toSec()/duration_time, 0.0), 1.0);
-    x = now_pose.position.x = start_pose.position.x*(1.0-val) + target_pose.position.x*val;
-    y = now_pose.position.y = start_pose.position.y*(1.0-val) + target_pose.position.y*val;
-    z = now_pose.position.z = start_pose.position.z*(1.0-val) + target_pose.position.z*val;
+    x = /*now_pose.position.x =*/ start_pose.position.x*(1.0-val) + target_pose.position.x*val;
+    y = /*now_pose.position.y =*/ start_pose.position.y*(1.0-val) + target_pose.position.y*val;
+    z = /*now_pose.position.z =*/ start_pose.position.z*(1.0-val) + target_pose.position.z*val;
 
     // Intermediate Calculation
     virtual_hight = z+l5-l_offset;

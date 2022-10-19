@@ -44,7 +44,6 @@ class Wait
         void reset();
 };
 
-
 void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta);
 // bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6);
 Eigen::Matrix<double, 6, 1> getPresentPosition();
@@ -146,9 +145,6 @@ void sequence()
             // target_theta << -90, 0, 140, 0, 40, 0;
             target_theta << 0, 0, 0, 0, 0, 0;
             target_theta *= M_PI/180.0;
-
-            now_pose = forwardKinematics();
-            std::cout << now_pose << std::endl;
 
             break;
 
@@ -367,6 +363,9 @@ int main(int argc, char **argv)
     while(nh.ok())
     {
         sequence();
+        now_pose = forwardKinematics();
+        std::cout << now_pose << std::endl;
+        
         if(is_valid)
         {
             #ifndef SIMULATION
@@ -485,7 +484,6 @@ bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
     #endif
     
     return false;
-    
 }
 
 // Basic Rotation
@@ -570,9 +568,9 @@ void inverseKinematics()
     
     // Liner Interpolation
     val = std::min(std::max((ros::Time::now() - start_time).toSec()/duration_time, 0.0), 1.0);
-    x = now_pose.position.x = start_pose.position.x*(1.0-val) + target_pose.position.x*val;
-    y = now_pose.position.y = start_pose.position.y*(1.0-val) + target_pose.position.y*val;
-    z = now_pose.position.z = start_pose.position.z*(1.0-val) + target_pose.position.z*val;
+    x = /*now_pose.position.x =*/ start_pose.position.x*(1.0-val) + target_pose.position.x*val;
+    y = /*now_pose.position.y =*/ start_pose.position.y*(1.0-val) + target_pose.position.y*val;
+    z = /*now_pose.position.z =*/ start_pose.position.z*(1.0-val) + target_pose.position.z*val;
 
     // Intermediate Calculation
     virtual_hight = z+l4-l_offset;
@@ -643,7 +641,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.159;
     
-    q.setRPY(0, 0, theta(0,0));
+    q.setRPY(0, 0, global_theta(0,0));
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -659,7 +657,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.0;
     
-    q.setRPY(0, theta(1,0), 0);
+    q.setRPY(0, global_theta(1,0), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -675,7 +673,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.264;
     
-    q.setRPY(0, theta(2,0), 0);
+    q.setRPY(0, global_theta(2,0), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -691,7 +689,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.258;
     
-    q.setRPY(0, 0, theta(3,0));
+    q.setRPY(0, 0, global_theta(3,0));
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -707,7 +705,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.0;
     
-    q.setRPY(0, theta(4,0), 0);
+    q.setRPY(0, global_theta(4,0), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -723,7 +721,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta)
     transformStamped.transform.translation.y = 0.0;
     transformStamped.transform.translation.z = 0.123;
     
-    q.setRPY(0, 0, theta(5,0));
+    q.setRPY(0, 0, global_theta(5,0));
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
