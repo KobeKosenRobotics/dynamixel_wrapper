@@ -44,11 +44,17 @@ class Wait
         void reset();
 };
 
+void nextStep();
+void updateStep(int next_step);
+
 void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta);
 // bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6);
 Eigen::Matrix<double, 6, 1> getPresentPosition();
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta);
 void setTargetPose(double x, double y, double z);
+
+void emagencyStop();
+void neutral();
 
 Eigen::Matrix3d rotationX(double theta);
 Eigen::Matrix3d rotationY(double theta);
@@ -60,10 +66,30 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> theta);
 
 // Global Variables
 // Sequence
-int status = 0;
+namespace Step
+{
+    const int emagency             = 0,
+              stay_neutral         = emagency+5,
+              stay                 = stay_neutral+5,
+              prescan_neutral      = stay+5,
+              prescan              = prescan_neutral+5,
+              scan                 = prescan+5,
+              catch_neutral        = scan+5,
+              catcH                = catch_neutral+5,
+              prerelease_neutral   = catcH+5,
+              prerelease           = prerelease_neutral+5,
+              release              = prerelease+5,
+              shake1               = release+5,
+              shake2               = shake1+5,
+              post_release         = shake2+5,
+              finish_neutral       = post_release+5,
+              finish               = finish_neutral+5;
+};
+
+int status = Step::stay_neutral;
 int scan_count = 0;
 int shaker = 10;
-Wait wait, getIsInPos;    // getIsInPose->wait??
+Wait wait, shaker_wait;
 
 #ifdef SIMULATION
 Wait sim_wait;
@@ -76,6 +102,10 @@ Eigen::Matrix<double, 6, 1> homing_offset;
 
 // Enable
 bool enable;
+bool enable_enable = false;
+
+// Emagency
+bool emagency;
 
 // Trash Pose
 geometry_msgs::Pose trash_pose;
@@ -105,16 +135,12 @@ std_msgs::Int16 state;
 // Callback
 void enable_cb(std_msgs::Bool::ConstPtr msg)
 {
-    if(msg->data == enable) return;
     enable = msg->data;
-    if(enable)
-    {
-        status++;
-    }
-    else
-    {
-        status = 0;
-    }
+}
+void emagency_cb(std_msgs::Bool::ConstPtr msg)
+{
+    if(msg->data == emagency) return;
+    emagency = msg->data;
 }
 void trash_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
@@ -137,50 +163,96 @@ void trash_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 // Sequence
 void sequence()
 {
+    if(emagency)
+    {
+        updateStep(Step::emagency);
+    }
+    else if(enable_enable && !enable)
+    {
+        updateStep(Step::stay_neutral);    // Stay Neutral
+    }
+
+    std::cout << status << std::endl;
+
     switch(status)
     {
-        case 0:    // Stay
-            std::cout << "STAY  STAY  STAY  STAY" << std::endl;
+        case Step::emagency:    // Emagency
+            std::cout << "EMAGENCY  EMAGENCY  EMAGENCY  EMAGENCY" << std::endl;
+            emagencyStop();
             enable = false;
-            scan_count = 0;
-            // target_theta << -90, 0, 140, 0, 40, 0;
-            // target_theta << 0, 0, 0, 0, 0, 0;
-            // target_theta *= M_PI/180.0;
-            
-            setTargetPose(0.0, -267.0, 103.0);
-            inverseKinematics();
-            
-            break;
-
-        case 2:    // PreScan
-            std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
-            target_theta << 0, 45, 45, 0, 90, 0;
-            target_theta *= M_PI/180.0;
-
-            if(isInPosition(target_theta))
+            if(!emagency)
             {
-                status++;
+                updateStep(Step::stay_neutral);
             }
             break;
         
-        case 5:    // Scan
+        case Step::stay_neutral:    // Stay Neutral
+            enable_enable = false;
+            neutral();
+            if(!wait.isWaiting(3))
+            {
+                nextStep();
+            }
+            break;
+        
+        case Step::stay:    // Stay
+            std::cout << "STAY  STAY  STAY  STAY" << std::endl;
+            
+            scan_count = 0;
+            // target_theta << -90, 0, 140, 0, 40, 0;
+            // target_theta *= M_PI/180.0;
+
+            setTargetPose(0.0, -200.0, 100.0);
+            inverseKinematics();
+            
+            if(enable)
+            {
+                enable_enable = true;
+                nextStep();
+            }
+            break;
+
+        case Step::prescan_neutral:
+            neutral();
+
+            if(isInPosition(target_theta) && !wait.isWaiting(3))
+            {
+                nextStep();
+            }
+            break;
+            
+
+        case Step::prescan:    // PreScan
+            std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
+            // target_theta << 0, 45, 45, 0, 90, 0;
+            // target_theta *= M_PI/180.0;
+
+            setTargetPose(448.0, 0.0, 224.0);
+            inverseKinematics();
+
+            if(isInPosition(target_theta) && !wait.isWaiting(3))
+            {
+                nextStep();
+            }
+            break;
+        
+        case Step::scan:    // Scan
             std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
             is_scanning = true;
             std::cout << trash_pose.orientation.w << std::endl;
             if(trash_pose.orientation.w > 0.5 && !wait.isWaiting(3))
             {
                 is_scanning = false;
-                scan_count++;
-                wait.reset();
-                status++;
+                nextStep();
             }
             else if(!wait.isWaiting(5))
             {
                 status = 30;
+                updateStep(Step::finish_neutral);
             }
             break;
         
-        case 10:    // Catch
+        case Step::catcH:    // Catch
             std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
 
             target_pose = trash_pose;
@@ -189,105 +261,104 @@ void sequence()
             // Exit
             if(!wait.isWaiting(5))
             {
-                is_first_inverse_kinematics = true;
-
-                status++;
+                nextStep();
             }
 
             break;
-        
-        case 15:    // PreRelease1
-            std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
-            target_theta << 0, 45, 45, 0, 90, 0;
-            target_theta *= M_PI/180.0;
 
-            if(isInPosition(target_theta) && !wait.isWaiting(1))
+        case Step::prerelease_neutral:
+            neutral();
+            if(!wait.isWaiting(3))
             {
-                status++;
+                nextStep();
             }
             break;
         
-        case 17:    // PreRelease2
+        case Step::prerelease:    // PreRelease2
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -120, -20, 110, -90, 80, 0;
             target_theta *= M_PI/180.0;
 
             if(isInPosition(target_theta))
             {
-                status++;
+                nextStep();
             }
             break;
         
-        case 20:    // Release
+        case Step::release:    // Release
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -120, -20, 110, -90, 40, 0;
             target_theta *= M_PI/180.0;
 
             if(isInPosition(target_theta))
             {
-                status++;
+                nextStep();
             }
             break;
         
-        case 22:    // Shake
+        case Step::shake1:    // Shake1
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             target_theta << -120, -20, 110, -90+shaker, 40, 0;
             target_theta *= M_PI/180.0;
 
-            if(!wait.isWaiting(5))
+            if(!shaker_wait.isWaiting(5))
             {
-                status+=2;
+                // updateStep(Step::post_release);
+                shaker_wait.reset();
+                updateStep(Step::post_release);
             }
             if(isInPosition(target_theta))
             {
-                status++;
+                updateStep(Step::shake2);
             }
             break;
 
-        case 23:    // Shake
+        case Step::shake2:    // Shake2
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             target_theta << -120, -20, 110, -90-shaker, 40, 0;
             target_theta *= M_PI/180.0;
 
             if(isInPosition(target_theta))
             {
-                status--;
+                updateStep(Step::shake1);
             }
             break;
 
-        case 25:    // PostRelease
+        case Step::post_release:    // PostRelease
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             target_theta << -60, -20, 110, -90, 80, 0;
             target_theta *= M_PI/180.0;
 
             if(scan_count >= 2)
             {
-                status = 30;
+                updateStep(Step::finish_neutral);
             }
             else if(isInPosition(target_theta) && !wait.isWaiting(1))
             {
-                status = 2;
+                updateStep(Step::prescan);
             }
             break;
 
-        case 30:    // Finish
+        case Step::finish_neutral:    // Neutral
+            std::cout << "NEUTRAL  NEUTRAL  NEUTRAL  NEUTRAL" << std::endl;
+            // target_theta << 
+
+        case Step::finish:    // Finish
             std::cout << "FINISH  FINISH  FINISH  FINISH" << std::endl;
             // target_theta << -90, 0, 140, 0, 40, 0;
             // target_theta *= M_PI/180.0;
 
-            setTargetPose(0.0, -267.0, 103.0);
+            setTargetPose(0.0, -200.0, 100.0);
             inverseKinematics();
 
             if(!wait.isWaiting(5))
             {
-                status = 0;
+                updateStep(Step::stay_neutral);
             }
             break;
             
         default:
-            wait.reset();
-            is_first_inverse_kinematics = true;
-            status++;
+            nextStep();
             break;
     }
 }
@@ -305,6 +376,7 @@ int main(int argc, char **argv)
 
     // Subscriber
     ros::Subscriber enable_sub = nh.subscribe<std_msgs::Bool>("enable", 10, enable_cb);
+    ros::Subscriber emagency_sub = nh.subscribe<std_msgs::Bool>("emagency", 10, emagency_cb);
     ros::Subscriber trash_sub = nh.subscribe<geometry_msgs::Pose>("trash_pose", 10, trash_pose_cb);
     
     // Arm Property
@@ -431,6 +503,19 @@ void Wait::reset()
     _is_first = true;
 }
 
+void nextStep()
+{
+    wait.reset();
+    is_first_inverse_kinematics = true;
+    status++;
+}
+void updateStep(int next_step)
+{
+    wait.reset();
+    is_first_inverse_kinematics = true;
+    status = next_step;
+}
+
 // Collective Instruction
 void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta)
 {
@@ -465,10 +550,11 @@ void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta)
 
 //     return false;
 // }
-Eigen::Matrix<double, 6, 1> getPresentPosition()
-{
-    
-}
+// Eigen::Matrix<double, 6, 1> getPresentPosition()
+// {
+//     return;
+// }
+
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
 {
     target_theta *= 180.0/M_PI;
@@ -500,6 +586,26 @@ void setTargetPose(double x, double y, double z)
     target_pose.position.x = x;
     target_pose.position.y = y;
     target_pose.position.z = z;
+}
+
+void emagencyStop()
+{
+    #ifndef SIMULATION
+    target_theta = getPresentPosition();
+    #endif
+
+    #ifdef SIMULATION
+    target_theta = target_theta;
+    #endif
+
+    return;
+}
+void neutral()
+{
+    std::cout << "NEUTRAL  NEUTRAL  NEUTRAL  NEUTRAL"  << std::endl;
+    setTargetPose(250.0, 0.0, 250.0);
+    inverseKinematics();
+    return;
 }
 
 // Basic Rotation
