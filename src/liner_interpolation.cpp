@@ -28,7 +28,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-#define SIMULATION
+// #define SIMULATION
 
 // Prototype Declearation
 class Wait
@@ -119,8 +119,9 @@ double duration_time = 3.0;
 bool is_first_inverse_kinematics = true;
 
 // Motor Declaration
+#ifndef SIMULATION
 std::string port_name("/dev/ttyUSB0");
-int baudrate=1000000;
+int baudrate = 1000000;
 dynamixel_wrapper::dynamixel_wrapper_base dxl_base(port_name, baudrate);
 dynamixel_wrapper::dynamixel_wrapper motor0(1, dxl_base, dynamixel_wrapper::PH54_200_S500_R, 4);
 dynamixel_wrapper::dynamixel_wrapper motor1(2, dxl_base, dynamixel_wrapper::H54_200_S500_R, 4);
@@ -128,6 +129,7 @@ dynamixel_wrapper::dynamixel_wrapper motor2(3, dxl_base, dynamixel_wrapper::H54_
 dynamixel_wrapper::dynamixel_wrapper motor3(4, dxl_base, dynamixel_wrapper::H54_100_S500_R, 4);
 dynamixel_wrapper::dynamixel_wrapper motor4(5, dxl_base, dynamixel_wrapper::H42_020_S300_R, 4);
 dynamixel_wrapper::dynamixel_wrapper motor5(6, dxl_base, dynamixel_wrapper::H42_020_S300_R, 4);
+#endif
 
 // Publisher
 std_msgs::Int16 state;
@@ -340,11 +342,18 @@ void sequence()
             break;
 
         case Step::finish_neutral:    // Neutral
-            std::cout << "NEUTRAL  NEUTRAL  NEUTRAL  NEUTRAL" << std::endl;
-            // target_theta << 
+            enable_enable = false;
+            neutral();
+
+            if(isInPosition(target_theta) && !wait.isWaiting(3))
+            {
+                nextStep();
+            }
+            break;
 
         case Step::finish:    // Finish
             std::cout << "FINISH  FINISH  FINISH  FINISH" << std::endl;
+            enable_enable = false;
             // target_theta << -90, 0, 140, 0, 40, 0;
             // target_theta *= M_PI/180.0;
 
@@ -353,7 +362,7 @@ void sequence()
 
             if(!wait.isWaiting(5))
             {
-                updateStep(Step::stay_neutral);
+                updateStep(Step::stay);
             }
             break;
             
@@ -400,6 +409,7 @@ int main(int argc, char **argv)
     homing_offset *= 180.0/M_PI;
     
     // Motor Set Up
+    #ifndef SIMULATION
     motor0.setTorqueEnable(false);
     motor0.setVelocityLimit(15);
     motor0.setHomingOffset(homing_offset(0,0));
@@ -435,6 +445,7 @@ int main(int argc, char **argv)
     motor5.setHomingOffset(homing_offset(5,0));
     motor3.setPositionGain(15, 0, 0);
     motor5.setTorqueEnable(true);
+    #endif
 
     homing_offset *= M_PI/180.0;
     
@@ -463,12 +474,14 @@ int main(int argc, char **argv)
     }
 
     // Torque Off
+    #ifndef SIMULATION
     motor0.setTorqueEnable(false);
     motor1.setTorqueEnable(false);
     motor2.setTorqueEnable(false);
     motor3.setTorqueEnable(false);
     motor4.setTorqueEnable(false);
     motor5.setTorqueEnable(false);
+    #endif
 
     return 0;
 }
@@ -519,6 +532,7 @@ void updateStep(int next_step)
 // Collective Instruction
 void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta)
 {
+    #ifndef SIMULATION
     target_theta *= 180.0/M_PI;
     motor0.setGoalPosition(target_theta(0,0));
     motor1.setGoalPosition(target_theta(1,0));
@@ -526,6 +540,24 @@ void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta)
     motor3.setGoalPosition(target_theta(3,0));
     motor4.setGoalPosition(target_theta(4,0));
     motor5.setGoalPosition(target_theta(5,0));
+    #endif
+}
+Eigen::Matrix<double, 6, 1> getPresentPosition()
+{
+    #ifndef SIMULATION
+    Eigen::Matrix<double, 6, 1> present_position;
+    present_position(0,0) = motor0.getPresentPosition();
+    present_position(1,0) = motor1.getPresentPosition();
+    present_position(2,0) = motor2.getPresentPosition();
+    present_position(3,0) = motor3.getPresentPosition();
+    present_position(4,0) = motor4.getPresentPosition();
+    present_position(5,0) = motor5.getPresentPosition();
+    return present_position;
+    #endif
+
+    #ifdef SIMULATION
+    return target_theta;
+    #endif
 }
 // bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6)
 // {
@@ -737,12 +769,14 @@ void inverseKinematics()
     // LED
     if(is_valid != is_valid_old)
     {
+        #ifndef SIMULATION
         motor0.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor1.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor2.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor3.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor4.setLED(is_valid?0:255, is_valid?255:0, 0);
         motor5.setLED(is_valid?0:255, is_valid?255:0, 0);
+        #endif
     }
     is_valid_old = is_valid;
 }
