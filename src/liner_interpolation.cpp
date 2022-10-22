@@ -28,7 +28,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-// #define SIMULATION
+#define SIMULATION
 
 // Prototype Declearation
 class Wait
@@ -48,7 +48,6 @@ void nextStep();
 void updateStep(int next_step);
 
 void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta);
-// bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6);
 Eigen::Matrix<double, 6, 1> getPresentPosition();
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta);
 void setTargetPose(double x, double y, double z);
@@ -74,8 +73,9 @@ namespace Step
               prescan_neutral      = stay+5,
               prescan              = prescan_neutral+5,
               scan                 = prescan+5,
-              catch_neutral        = scan+5,
-              catcH                = catch_neutral+5,
+              precatch_neutral     = scan+5,
+              precatch             = precatch_neutral+5,
+              catcH                = precatch+5,
               prerelease_neutral   = catcH+5,
               prerelease           = prerelease_neutral+5,
               release              = prerelease+5,
@@ -149,10 +149,9 @@ void trash_pose_cb(geometry_msgs::Pose::ConstPtr msg)
     if(is_scanning)
     {
         trash_pose.orientation.w = msg->orientation.w;
-        if(msg->orientation.w > 0.5)    // exist:w=1, not exsist:w=-1;
+        if(msg->orientation.w > 0.5)    // exist:w=1, not exsist:w=0;
         {
             trash_pose = *msg;
-            // target_pose = *msg;
             if(msg->orientation.x > 3.0)
             {
                 duration_time = msg->orientation.x;
@@ -201,8 +200,6 @@ void sequence()
             std::cout << "STAY  STAY  STAY  STAY" << std::endl;
             
             scan_count = 0;
-            // target_theta << -90, 0, 140, 0, 40, 0;
-            // target_theta *= M_PI/180.0;
 
             setTargetPose(0.0, -200.0, 100.0);
             inverseKinematics();
@@ -226,8 +223,6 @@ void sequence()
 
         case Step::prescan:    // PreScan
             std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
-            // target_theta << 0, 45, 45, 0, 90, 0;
-            // target_theta *= M_PI/180.0;
 
             setTargetPose(448.0, 0.0, 224.0);
             inverseKinematics();
@@ -252,6 +247,20 @@ void sequence()
                 status = 30;
                 updateStep(Step::finish_neutral);
             }
+            break;
+
+        case Step::precatch:
+            std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
+
+            setTargetPose(trash_pose.position.x, trash_pose.position.y, trash_pose.position.z+50);
+            inverseKinematics();
+
+            // Exit
+            if(!wait.isWaiting(5))
+            {
+                nextStep();
+            }
+
             break;
         
         case Step::catcH:    // Catch
@@ -305,7 +314,6 @@ void sequence()
 
             if(!shaker_wait.isWaiting(5))
             {
-                // updateStep(Step::post_release);
                 shaker_wait.reset();
                 updateStep(Step::post_release);
             }
@@ -354,8 +362,6 @@ void sequence()
         case Step::finish:    // Finish
             std::cout << "FINISH  FINISH  FINISH  FINISH" << std::endl;
             enable_enable = false;
-            // target_theta << -90, 0, 140, 0, 40, 0;
-            // target_theta *= M_PI/180.0;
 
             setTargetPose(0.0, -200.0, 100.0);
             inverseKinematics();
@@ -559,33 +565,6 @@ Eigen::Matrix<double, 6, 1> getPresentPosition()
     return target_theta;
     #endif
 }
-// bool isInPosition(double t1, double t2, double t3, double t4, double t5, double t6)
-// {
-//     #ifdef SIMULATION
-//     if(!sim_wait.isWaiting(1))
-//     {
-//         sim_wait.reset();
-//         return true;
-//     }
-//     #endif
-
-//     #ifndef SIMULATION
-//     double dt1, dt2, dt3, dt4, dt5, dt6;
-//     dt1 = fabs(t1 - motor0.getPresentPosition());
-//     dt2 = fabs(t2 - motor1.getPresentPosition());
-//     dt3 = fabs(t3 - motor2.getPresentPosition());
-//     dt4 = fabs(t4 - motor3.getPresentPosition());
-//     dt5 = fabs(t5 - motor4.getPresentPosition());
-//     dt6 = fabs(t6 - motor5.getPresentPosition());
-//     if(dt2 < 1 && dt2 < 1 && dt3 < 1 && dt4 < 1 && dt5 < 1 && dt6 < 1) return true;
-//     #endif
-
-//     return false;
-// }
-// Eigen::Matrix<double, 6, 1> getPresentPosition()
-// {
-//     return;
-// }
 
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
 {
@@ -731,9 +710,9 @@ void inverseKinematics()
     
     // Liner Interpolation
     val = std::min(std::max((ros::Time::now() - start_time).toSec()/duration_time, 0.0), 1.0);
-    x = /*now_pose.position.x =*/ start_pose.position.x*(1.0-val) + target_pose.position.x*val;
-    y = /*now_pose.position.y =*/ start_pose.position.y*(1.0-val) + target_pose.position.y*val;
-    z = /*now_pose.position.z =*/ start_pose.position.z*(1.0-val) + target_pose.position.z*val;
+    x = start_pose.position.x*(1.0-val) + target_pose.position.x*val;
+    y = start_pose.position.y*(1.0-val) + target_pose.position.y*val;
+    z = start_pose.position.z*(1.0-val) + target_pose.position.z*val;
 
     // Intermediate Calculation
     virtual_hight = z+l4-l_offset;
