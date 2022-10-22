@@ -601,7 +601,7 @@ bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
 
     #ifndef SIMULATION
     double dt1, dt2, dt3, dt4, dt5, dt6;
-    dt1 = fabs(target_theta(0,0)- motor0.getPresentPosition());
+    dt1 = fabs(target_theta(0,0) - motor0.getPresentPosition());
     dt2 = fabs(target_theta(1,0) - motor1.getPresentPosition());
     dt3 = fabs(target_theta(2,0) - motor2.getPresentPosition());
     dt4 = fabs(target_theta(3,0) - motor3.getPresentPosition());
@@ -623,7 +623,16 @@ void setTargetPose(double x, double y, double z)
 void emagencyStop()
 {
     #ifndef SIMULATION
-    target_theta = getPresentPosition();
+    // target_theta = getPresentPosition();
+    target_theta(0,0) = motor0.getPresentPosition();
+    target_theta(1,0) = motor1.getPresentPosition();
+    target_theta(2,0) = motor2.getPresentPosition();
+    target_theta(3,0) = motor3.getPresentPosition();
+    target_theta(4,0) = motor4.getPresentPosition();
+    target_theta(5,0) = motor5.getPresentPosition();
+    
+    target_theta *= M_PI/180.0;
+
     #endif
 
     #ifdef SIMULATION
