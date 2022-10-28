@@ -75,3 +75,9 @@ target_link_libraries(liner_interpolation ${catkin_LIBRARIES} "/usr/include/eige
 
 add_executable(jacobi3 src/jacobi3.cpp)
 target_link_libraries(jacobi3 ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(orientation src/orientation.cpp)
+target_link_libraries(orientation ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(check_inverse src/check_inverse.cpp)
+target_link_libraries(check_inverse ${catkin_LIBRARIES} "/usr/include/eigen3")
