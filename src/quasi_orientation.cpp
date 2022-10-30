@@ -288,10 +288,7 @@ void sequence()
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             // target_theta << -120, -20, 110, -90, 80, 0;
             // target_theta *= M_PI/180.0;
-
-            setTargetPose(+200.0, -120.0, 400.0, 1.92, -1.57, 1.40);
-            // setTargetPose(-200.0, -120.0, 400.0);
-
+            setTargetPose(200.0, -120.0, 400.0, -1.6, -0.09, 0.0);
             inverseKinematics();
 
             if(isInPosition(target_theta))
@@ -302,8 +299,10 @@ void sequence()
         
         case Step::release:    // Release
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
-            target_theta << -120, -20, 110, -90, 40, 0;
-            target_theta *= M_PI/180.0;
+            // target_theta << -120, -20, 110, -90, 40, 0;
+            // target_theta *= M_PI/180.0;
+            setTargetPose(-190.0, -200.0, 400.0, -1.6, -0.09, 0.0);
+            inverseKinematics();
 
             if(isInPosition(target_theta))
             {
@@ -313,8 +312,10 @@ void sequence()
         
         case Step::shake1:    // Shake1
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
-            target_theta << -120, -20, 110, -90+shaker, 40, 0;
-            target_theta *= M_PI/180.0;
+            // target_theta << -120, -20, 110, -90+shaker, 40, 0;
+            // target_theta *= M_PI/180.0;
+            setTargetPose(-192.0, -200.0, 385.0, -1.40, -0.09, 0.0);
+            inverseKinematics();
 
             if(!shaker_wait.isWaiting(5))
             {
@@ -329,8 +330,10 @@ void sequence()
 
         case Step::shake2:    // Shake2
             std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
-            target_theta << -120, -20, 110, -90-shaker, 40, 0;
-            target_theta *= M_PI/180.0;
+            // target_theta << -120, -20, 110, -90-shaker, 40, 0;
+            // target_theta *= M_PI/180.0;
+            setTargetPose(-194.0, -202.0, 408.0, -1.75, -0.09, 0.0);
+            inverseKinematics();
 
             if(isInPosition(target_theta))
             {
@@ -478,12 +481,8 @@ int main(int argc, char **argv)
 
         sequence();
         now_pose = forwardKinematics();
-
-        // std::cout << target_theta(0,0) << std::endl;
         std::cout << now_pose << std::endl;
         std::cout << sim_theta << std::endl;
-        // std::cout << start_pose << std::endl;
-        // std::cout << roll << "\t" << pitch << "\t" << yaw << std::endl;
         
         if(is_valid)
         {
@@ -786,12 +785,6 @@ void inverseKinematics()
     roll  = start_pose.orientation.x*(1.0-val) + target_pose.orientation.x*val;
     pitch = start_pose.orientation.y*(1.0-val) + target_pose.orientation.y*val;
     yaw   = start_pose.orientation.z*(1.0-val) + target_pose.orientation.z*val;
-    // roll = target_pose.orientation.x;
-    // if(M_PI-0.001 < theta(1,0)+theta(2,0)+theta(4,0) && theta(1,0)+theta(2,0)+theta(4,0) < M_PI+0.001 && -0.001 < target_pose.orientation.y && target_pose.orientation.y < 0.001)
-    // {
-    //     pitch = target_pose.orientation.y;   
-    // }
-    // yaw = target_pose.orientation.z;
 
     // Tip
     // Rotation
