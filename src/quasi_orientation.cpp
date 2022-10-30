@@ -174,7 +174,7 @@ void sequence()
         updateStep(Step::stay_neutral);    // Stay Neutral
     }
 
-    // std::cout << status << std::endl;
+    std::cout << status << std::endl;
 
     switch(status)
     {
@@ -244,7 +244,6 @@ void sequence()
             }
             else if(!wait.isWaiting(5))
             {
-                status = 30;
                 updateStep(Step::finish_neutral);
             }
             break;
@@ -479,10 +478,12 @@ int main(int argc, char **argv)
 
         sequence();
         now_pose = forwardKinematics();
-        std::cout << target_theta(0,0) << std::endl;
-        // std::cout << now_pose << std::endl;
-        // std::cout << sim_theta << std::endl;
+
+        // std::cout << target_theta(0,0) << std::endl;
+        std::cout << now_pose << std::endl;
+        std::cout << sim_theta << std::endl;
         // std::cout << start_pose << std::endl;
+        // std::cout << roll << "\t" << pitch << "\t" << yaw << std::endl;
         
         if(is_valid)
         {
@@ -494,8 +495,6 @@ int main(int argc, char **argv)
         #ifdef SIMULATION
         sim_theta = target_theta;
         #endif
-        
-        // tf_broadcaster(sim_theta);
         
         state.data = status;
         state_pub.publish(state);
@@ -532,7 +531,7 @@ bool Wait::isWaiting(double seconds)
 
     _duration_seconds = _duration.toSec();;
 
-    // std::cout << _duration_seconds << std::endl;
+    std::cout << _duration_seconds << std::endl;
 
     if(_duration_seconds < seconds)
     {
@@ -648,7 +647,7 @@ void setTargetPose(double x, double y, double z, double theta3rad, double theta4
     target_pose.position.y = y;
     target_pose.position.z = z;
     target_pose.orientation.x = theta3rad;
-    target_pose.orientation.y = theta4rad-M_PI;
+    target_pose.orientation.y = theta4rad;
     target_pose.orientation.z = theta5rad;
 }
 
@@ -694,7 +693,7 @@ Eigen::Matrix3d rotationY(double global_theta)
 {
     Eigen::Matrix3d rotation;
     rotation <<  cos(global_theta), 0.0, sin(global_theta),
-                    0.0           , 1.0, 0.0              ,
+                 0.0              , 1.0, 0.0              ,
                 -sin(global_theta), 0.0, cos(global_theta);
     return rotation;
 }
@@ -703,7 +702,7 @@ Eigen::Matrix3d rotationZ(double global_theta)
     Eigen::Matrix3d rotation;
     rotation << cos(global_theta), -sin(global_theta), 0.0,
                 sin(global_theta),  cos(global_theta), 0.0,
-                0.0              , 0.0               , 1.0;
+                0.0              ,  0.0              , 1.0;
     return rotation;
 }
 
@@ -746,7 +745,7 @@ geometry_msgs::Pose forwardKinematics()
     pose.position.y = position(1,0);
     pose.position.z = position(2,0);
     pose.orientation.x = theta(3,0);
-    pose.orientation.y = theta(4,0);
+    pose.orientation.y = theta(1,0)+theta(2,0)+theta(4,0)-M_PI;
     pose.orientation.z = theta(5,0);
 
     return pose;
@@ -788,10 +787,10 @@ void inverseKinematics()
     pitch = start_pose.orientation.y*(1.0-val) + target_pose.orientation.y*val;
     yaw   = start_pose.orientation.z*(1.0-val) + target_pose.orientation.z*val;
     // roll = target_pose.orientation.x;
-    if(M_PI-0.001 < theta(1,0)+theta(2,0)+theta(4,0) && theta(1,0)+theta(2,0)+theta(4,0) < M_PI+0.001 && -0.001 < target_pose.orientation.y && target_pose.orientation.y < 0.001)
-    {
-        pitch = target_pose.orientation.y;   
-    }
+    // if(M_PI-0.001 < theta(1,0)+theta(2,0)+theta(4,0) && theta(1,0)+theta(2,0)+theta(4,0) < M_PI+0.001 && -0.001 < target_pose.orientation.y && target_pose.orientation.y < 0.001)
+    // {
+    //     pitch = target_pose.orientation.y;   
+    // }
     // yaw = target_pose.orientation.z;
 
     // Tip
@@ -818,45 +817,18 @@ void inverseKinematics()
     bowstring = sqrt(virtual_hight*virtual_hight+radius*radius);
     alpha = acos((bowstring*bowstring+l1*l1-l2*l2)/(2*bowstring*l1));
     beta = acos((l1*l1+l2*l2-bowstring*bowstring)/(2*l1*l2));
-    if(virtual_hight>0)
+    delta = acos(virtual_hight/bowstring);
+    if(radius/bowstring < 0)
     {
-        delta = atan(radius/virtual_hight);
-    }
-    else if(virtual_hight<0)
-    {
-        delta = M_PI+atan(radius/virtual_hight);
+        delta *= (-1);
     }
 
     // Target Theta Position
-    // if(x>0)
-    // {
-    //     target_theta(0,0) = atan(y/x);
-    // }
-    // else
-    // {
-    //     target_theta(0,0) = M_PI-atan(y/x);
-    // }
     target_theta(0,0) = acos(x/radius);
     if(y/radius < 0)
     {
         target_theta(0,0) *= (-1);
     }
-    // else if(y>0)
-    // {
-    //     std::cout << "-----------" << std::endl;
-    //     target_theta(0,0) = M_PI/2.0;
-    //     updateStep(Step::finish);
-    // }
-    // else if(y<0)
-    // {
-    //     std::cout << "ooooooooooo" << std::endl;
-    //     target_theta(0,0) = -M_PI/2.0;
-    //     updateStep(Step::finish);
-    // }
-    // else
-    // {
-    //     updateStep(Step::finish);
-    // }
     target_theta(1,0) = delta-alpha;
     target_theta(2,0) = M_PI-beta;
 
