@@ -165,6 +165,15 @@ void trash_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 // Sequence
 void sequence()
 {
+    if(status == Step::shake1 || status == Step::shake2)
+    {
+        duration_time = 1.0;
+    }
+    else
+    {
+        duration_time = 3.0;
+    }
+    
     if(emagency)
     {
         updateStep(Step::emagency);
@@ -306,7 +315,6 @@ void sequence()
 
             if(isInPose())
             {
-                duration_time = 1.0;
                 nextStep();
             }
             break;
@@ -321,7 +329,6 @@ void sequence()
             if(!shaker_wait.isWaiting(5))
             {
                 shaker_wait.reset();
-                duration_time = 3.0;
                 updateStep(Step::post_release);
             }
             if(isInPose())
