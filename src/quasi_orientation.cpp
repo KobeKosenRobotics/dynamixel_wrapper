@@ -49,7 +49,7 @@ void updateStep(int next_step);
 
 void setGoalPosition(Eigen::Matrix<double, 6, 1> target_theta);
 Eigen::Matrix<double, 6, 1> getPresentPosition();
-bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta);
+bool isInPose();
 void setTargetPose(double x, double y, double z);
 void setTargetPose(double x, double y, double z, double theta3, double theta4, double theta5);
 
@@ -192,7 +192,7 @@ void sequence()
             enable_enable = false;
 
             neutral();
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 nextStep();
             }
@@ -216,7 +216,7 @@ void sequence()
         case Step::prescan_neutral:
             neutral();
 
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 nextStep();
             }
@@ -228,7 +228,7 @@ void sequence()
             setTargetPose(448.0, 0.0, 224.0);
             inverseKinematics();
 
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 nextStep();
             }
@@ -255,7 +255,7 @@ void sequence()
             inverseKinematics();
 
             // Exit
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 nextStep();
             }
@@ -278,7 +278,7 @@ void sequence()
 
         case Step::prerelease_neutral:
             neutral();
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 nextStep();
             }
@@ -291,7 +291,7 @@ void sequence()
             setTargetPose(200.0, -120.0, 400.0, -1.6, -0.09, 0.0);
             inverseKinematics();
 
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 nextStep();
             }
@@ -304,7 +304,7 @@ void sequence()
             setTargetPose(-190.0, -200.0, 400.0, -1.6, -0.09, 0.0);
             inverseKinematics();
 
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 nextStep();
             }
@@ -322,7 +322,7 @@ void sequence()
                 shaker_wait.reset();
                 updateStep(Step::post_release);
             }
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 updateStep(Step::shake2);
             }
@@ -335,7 +335,7 @@ void sequence()
             setTargetPose(-194.0, -202.0, 408.0, -1.75, -0.09, 0.0);
             inverseKinematics();
 
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 updateStep(Step::shake1);
             }
@@ -350,7 +350,7 @@ void sequence()
             {
                 updateStep(Step::finish_neutral);
             }
-            else if(isInPosition(target_theta))
+            else if(isInPose())
             {
                 updateStep(Step::prescan);
             }
@@ -360,7 +360,7 @@ void sequence()
             enable_enable = false;
             neutral();
 
-            if(isInPosition(target_theta))
+            if(isInPose())
             {
                 nextStep();
             }
@@ -373,7 +373,7 @@ void sequence()
             setTargetPose(0.0, -200.0, 100.0);
             inverseKinematics();
 
-            if(isInPosition(target_theta) && !wait.isWaiting(5))
+            if(isInPose() && !wait.isWaiting(5))
             {
                 updateStep(Step::stay);
             }
@@ -465,8 +465,6 @@ int main(int argc, char **argv)
     
     // Start Time
     start_time = ros::Time::now();
-
-    // sim_theta << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
 
     target_theta << 0.0, -0.017, 1.788, 0.0, 1.371, 0.0; 
 
@@ -594,7 +592,7 @@ Eigen::Matrix<double, 6, 1> getPresentPosition()
     #endif
 }
 
-bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
+bool isInPose()
 {
     double dt1, dt2, dt3, dt4, dt5, dt6;
     dt1 = fabs(target_pose.position.x - now_pose.position.x);
