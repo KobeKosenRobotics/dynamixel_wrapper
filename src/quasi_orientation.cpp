@@ -116,7 +116,7 @@ geometry_msgs::Pose target_pose, start_pose, now_pose;
 double val, x, y, z, roll, pitch, yaw, virtual_hight, radius, bowstring, alpha, beta, delta;
 bool is_valid = true, is_valid_old = true;
 Eigen::Matrix<double, 6, 1> target_theta, theta, global_theta, sim_theta;    // target_theta: to motor, theta: from sensor
-double duration_time = 3.0;
+double duration_time = 1.0;
 bool is_first_inverse_kinematics = true;
 
 // Euler Orientation
@@ -216,7 +216,7 @@ void sequence()
         case Step::prescan_neutral:
             neutral();
 
-            if(isInPosition(target_theta) && !wait.isWaiting(3))
+            if(isInPosition(target_theta))
             {
                 nextStep();
             }
@@ -228,7 +228,7 @@ void sequence()
             setTargetPose(448.0, 0.0, 224.0);
             inverseKinematics();
 
-            if(isInPosition(target_theta) && !wait.isWaiting(3))
+            if(isInPosition(target_theta))
             {
                 nextStep();
             }
@@ -255,7 +255,7 @@ void sequence()
             inverseKinematics();
 
             // Exit
-            if(!wait.isWaiting(5))
+            if(isInPosition(target_theta))
             {
                 nextStep();
             }
@@ -278,7 +278,7 @@ void sequence()
 
         case Step::prerelease_neutral:
             neutral();
-            if(!wait.isWaiting(3))
+            if(isInPosition(target_theta))
             {
                 nextStep();
             }
@@ -343,15 +343,14 @@ void sequence()
 
         case Step::post_release:    // PostRelease
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
-            setTargetPose(+0.1, -235.0, 405.0, -1.57, 1.40, 0.0);
-            // setTargetPose(-0.1, -235.0, 405.0);
+            setTargetPose(-0.1, -235.0, 405.0, -1.57, 1.40, 0.0);
             inverseKinematics();
 
             if(scan_count >= 2)
             {
                 updateStep(Step::finish_neutral);
             }
-            else if(isInPosition(target_theta) && !wait.isWaiting(1))
+            else if(isInPosition(target_theta))
             {
                 updateStep(Step::prescan);
             }
@@ -361,7 +360,7 @@ void sequence()
             enable_enable = false;
             neutral();
 
-            if(isInPosition(target_theta) && !wait.isWaiting(3))
+            if(isInPosition(target_theta))
             {
                 nextStep();
             }
@@ -374,7 +373,7 @@ void sequence()
             setTargetPose(0.0, -200.0, 100.0);
             inverseKinematics();
 
-            if(!wait.isWaiting(5))
+            if(isInPosition(target_theta) && !wait.isWaiting(5))
             {
                 updateStep(Step::stay);
             }
@@ -478,9 +477,10 @@ int main(int argc, char **argv)
     while(nh.ok())
     {
         tf_broadcaster(sim_theta);
-
-        sequence();
         now_pose = forwardKinematics();
+        
+        sequence();
+        
         std::cout << now_pose << std::endl;
         std::cout << sim_theta << std::endl;
         
@@ -596,36 +596,14 @@ Eigen::Matrix<double, 6, 1> getPresentPosition()
 
 bool isInPosition(Eigen::Matrix<double, 6, 1> target_theta)
 {
-    target_theta *= 180.0/M_PI;
-
-    #ifdef SIMULATION
-    if(!sim_wait.isWaiting(3))
-    {
-        sim_wait.reset();
-        return true;
-    }
-    
-    // double dt1, dt2, dt3, dt4, dt5, dt6;
-    // dt1 = fabs(target_theta(0,0) - sim_theta(0,0));
-    // dt2 = fabs(target_theta(1,0) - sim_theta(1,0));
-    // dt3 = fabs(target_theta(2,0) - sim_theta(2,0));
-    // dt4 = fabs(target_theta(3,0) - sim_theta(3,0));
-    // dt5 = fabs(target_theta(4,0) - sim_theta(4,0));
-    // dt6 = fabs(target_theta(5,0) - sim_theta(5,0));
-    // std::cout << "--------------" << dt1 << std::endl;
-    // if(dt2 < 0.1 && dt2 < 0.1 && dt3 < 0.1 && dt4 < 0.1 && dt5 < 0.1 && dt6 < 0.1) return true;
-    #endif
-
-    #ifndef SIMULATION
     double dt1, dt2, dt3, dt4, dt5, dt6;
-    dt1 = fabs(target_theta(0,0) - motor0.getPresentPosition());
-    dt2 = fabs(target_theta(1,0) - motor1.getPresentPosition());
-    dt3 = fabs(target_theta(2,0) - motor2.getPresentPosition());
-    dt4 = fabs(target_theta(3,0) - motor3.getPresentPosition());
-    dt5 = fabs(target_theta(4,0) - motor4.getPresentPosition());
-    dt6 = fabs(target_theta(5,0) - motor5.getPresentPosition());
-    if(dt2 < 1 && dt2 < 1 && dt3 < 1 && dt4 < 1 && dt5 < 1 && dt6 < 1) return true;    // deg -> rad
-    #endif
+    dt1 = fabs(target_pose.position.x - now_pose.position.x);
+    dt2 = fabs(target_pose.position.x - now_pose.position.x);
+    dt3 = fabs(target_pose.position.x - now_pose.position.x);
+    dt4 = fabs(target_pose.orientation.x - now_pose.orientation.x);
+    dt5 = fabs(target_pose.orientation.y - now_pose.orientation.y);
+    dt6 = fabs(target_pose.orientation.z - now_pose.orientation.z);
+    if(dt2 < 0.1 && dt2 < 0.1 && dt3 < 0.1 && dt4 < 0.001 && dt5 < 0.001 && dt6 < 0.001) return true;
     
     return false;
 }
