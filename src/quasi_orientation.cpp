@@ -28,7 +28,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-#define SIMULATION
+// #define SIMULATION
 
 // Prototype Declearation
 class Wait
@@ -173,7 +173,7 @@ void sequence()
     {
         duration_time = 3.0;
     }
-    
+
     if(emagency)
     {
         updateStep(Step::emagency);
@@ -184,6 +184,7 @@ void sequence()
     }
 
     std::cout << status << std::endl;
+    std::cout << duration_time << std::endl;
 
     switch(status)
     {
@@ -260,7 +261,7 @@ void sequence()
         case Step::precatch:
             std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
 
-            setTargetPose(trash_pose.position.x, trash_pose.position.y, trash_pose.position.z+50);
+            setTargetPose(trash_pose.position.x, trash_pose.position.y, trash_pose.position.z+100);
             inverseKinematics();
 
             // Exit
@@ -352,7 +353,7 @@ void sequence()
 
         case Step::post_release:    // PostRelease
             std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
-            setTargetPose(-0.1, -235.0, 405.0, -1.57, 1.40, 0.0);
+            setTargetPose(-0.1, -235.0, 405.0, -1.57, 0.0, 0.0);
             inverseKinematics();
 
             if(scan_count >= 2)
@@ -489,7 +490,7 @@ int main(int argc, char **argv)
         sequence();
         
         std::cout << now_pose << std::endl;
-        std::cout << sim_theta << std::endl;
+        std::cout << target_theta*180.0/M_PI << std::endl;
         
         if(is_valid)
         {
@@ -610,7 +611,7 @@ bool isInPose()
     dt4 = fabs(target_pose.orientation.x - now_pose.orientation.x);
     dt5 = fabs(target_pose.orientation.y - now_pose.orientation.y);
     dt6 = fabs(target_pose.orientation.z - now_pose.orientation.z);
-    if(dt2 < 0.1 && dt2 < 0.1 && dt3 < 0.1 && dt4 < 0.001 && dt5 < 0.001 && dt6 < 0.001) return true;
+    if(dt1 < 1.0 && dt2 < 1.0 && dt3 < 1.0 && dt4 < 0.1 && dt5 < 0.1 && dt6 < 0.1) return true;
     
     return false;
 }
