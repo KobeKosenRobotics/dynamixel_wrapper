@@ -116,7 +116,7 @@ geometry_msgs::Pose target_pose, start_pose, now_pose;
 double val, x, y, z, roll, pitch, yaw, virtual_hight, radius, bowstring, alpha, beta, delta;
 bool is_valid = true, is_valid_old = true;
 Eigen::Matrix<double, 6, 1> target_theta, theta, global_theta, sim_theta;    // target_theta: to motor, theta: from sensor
-double duration_time = 1.0;
+double duration_time = 3.0;
 bool is_first_inverse_kinematics = true;
 
 // Euler Orientation
@@ -306,6 +306,7 @@ void sequence()
 
             if(isInPose())
             {
+                duration_time = 1.0;
                 nextStep();
             }
             break;
@@ -320,6 +321,7 @@ void sequence()
             if(!shaker_wait.isWaiting(5))
             {
                 shaker_wait.reset();
+                duration_time = 3.0;
                 updateStep(Step::post_release);
             }
             if(isInPose())
