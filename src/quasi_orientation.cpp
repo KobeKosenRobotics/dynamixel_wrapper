@@ -28,7 +28,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-// #define SIMULATION
+#define SIMULATION
 
 // Prototype Declearation
 class Wait
@@ -61,6 +61,7 @@ Eigen::Matrix3d rotationY(double theta);
 Eigen::Matrix3d rotationZ(double theta);
 geometry_msgs::Pose forwardKinematics();
 void inverseKinematics();
+double getTargetDistance();
 
 void tf_broadcaster(Eigen::Matrix<double, 6, 1> sim_theta);
 
@@ -68,6 +69,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> sim_theta);
 // Sequence
 namespace Step
 {
+    bool message = true;
     const int emagency             = 0,
               stay_neutral         = emagency+5,
               stay                 = stay_neutral+5,
@@ -116,7 +118,12 @@ geometry_msgs::Pose target_pose, start_pose, now_pose;
 double val, x, y, z, roll, pitch, yaw, virtual_hight, radius, bowstring, alpha, beta, delta;
 bool is_valid = true, is_valid_old = true;
 Eigen::Matrix<double, 6, 1> target_theta, theta, global_theta, sim_theta;    // target_theta: to motor, theta: from sensor
-double duration_time = 3.0;
+#ifndef SIMULATION
+double duration_time = 3.0, linear_velocity = 50.0;    // linear_velocity[mm/s]
+#endif
+#ifdef SIMULATION
+double duration_time = 3.0, linear_velocity = 200.0;    // linear_velocity[mm/s]
+#endif
 bool is_first_inverse_kinematics = true;
 
 // Euler Orientation
@@ -165,17 +172,16 @@ void trash_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 // Sequence
 void sequence()
 {
-    if(status == Step::shake1 || status == Step::shake2)
-    {
-        duration_time = 1.0;
-    }
-    else
-    {
-        duration_time = 3.0;
-    }
-
     if(emagency)
     {
+        #ifndef SIMULATION
+        motor0.setCurrentLimit(0);
+        motor1.setCurrentLimit(1860.0/32.0);
+        motor2.setCurrentLimit(930.0/16.0);
+        motor3.setCurrentLimit(930.0/16.0);
+        motor4.setCurrentLimit(1395.0/32.0);
+        motor5.setCurrentLimit(1395.0/32.0);
+        #endif
         updateStep(Step::emagency);
     }
     else if(enable_enable && !enable)
@@ -183,17 +189,24 @@ void sequence()
         updateStep(Step::stay_neutral);    // Stay Neutral
     }
 
-    std::cout << status << std::endl;
-    std::cout << duration_time << std::endl;
+    // std::cout << "    " << status << "    ";
 
     switch(status)
     {
         case Step::emagency:    // Emagency
-            std::cout << "EMAGENCY  EMAGENCY  EMAGENCY  EMAGENCY" << std::endl;
+            if(Step::message) std::cout << "EMAGENCY  EMAGENCY  EMAGENCY  EMAGENCY" << std::endl;
             emagencyStop();
             enable = false;
             if(!emagency)
             {
+                #ifndef SIMULATION
+                motor0.setCurrentLimit(22740.0/16.0);
+                motor1.setCurrentLimit(1860.0/8.0);
+                motor2.setCurrentLimit(930.0/4.0);
+                motor3.setCurrentLimit(930.0/4.0);
+                motor4.setCurrentLimit(1395.0/8.0);
+                motor5.setCurrentLimit(1395.0/8.0);
+                #endif
                 updateStep(Step::stay_neutral);
             }
             break;
@@ -209,7 +222,7 @@ void sequence()
             break;
         
         case Step::stay:    // Stay
-            std::cout << "STAY  STAY  STAY  STAY" << std::endl;
+            if(Step::message) std::cout << "STAY  STAY  STAY  STAY" << std::endl;
             
             scan_count = 0;
 
@@ -233,7 +246,7 @@ void sequence()
             break;
             
         case Step::prescan:    // PreScan
-            std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
+            if(Step::message) std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
 
             setTargetPose(448.0, 0.0, 224.0);
             inverseKinematics();
@@ -245,9 +258,10 @@ void sequence()
             break;
         
         case Step::scan:    // Scan
-            std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
+            if(Step::message) std::cout << "SCAN  SCAN  SCAN  SCAN" << std::endl;
             is_scanning = true;
-            if(trash_pose.orientation.w > 0.5 && !wait.isWaiting(3))
+            // if(trash_pose.orientation.w > 0.5 && !wait.isWaiting(3))
+            if(trash_pose.orientation.w > 0.5 && !wait.isWaiting(1))
             {
                 is_scanning = false;
                 nextStep();
@@ -259,7 +273,7 @@ void sequence()
             break;
 
         case Step::precatch:
-            std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
+            if(Step::message) std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
 
             setTargetPose(trash_pose.position.x, trash_pose.position.y, trash_pose.position.z+100);
             inverseKinematics();
@@ -273,13 +287,14 @@ void sequence()
             break;
         
         case Step::catcH:    // Catch
-            std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
+            if(Step::message) std::cout << "CATCH  CATCH  CATCH  CATCH" << std::endl;
 
-            target_pose = trash_pose;
+            setTargetPose(trash_pose.position.x, trash_pose.position.y, trash_pose.position.z);
             inverseKinematics();
 
             // Exit
-            if(!wait.isWaiting(5))
+            if(isInPose() && !wait.isWaiting(5))
+            // if(isInPose() && !wait.isWaiting(2))
             {
                 nextStep();
             }
@@ -295,7 +310,7 @@ void sequence()
             break;
         
         case Step::prerelease:    // PreRelease2
-            std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
+            if(Step::message) std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             // target_theta << -120, -20, 110, -90, 80, 0;
             // target_theta *= M_PI/180.0;
             setTargetPose(200.0, -120.0, 400.0, -1.6, -0.09, 0.0);
@@ -308,7 +323,7 @@ void sequence()
             break;
         
         case Step::release:    // Release
-            std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
+            if(Step::message) std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             // target_theta << -120, -20, 110, -90, 40, 0;
             // target_theta *= M_PI/180.0;
             setTargetPose(-190.0, -200.0, 400.0, -1.6, -0.09, 0.0);
@@ -321,13 +336,14 @@ void sequence()
             break;
         
         case Step::shake1:    // Shake1
-            std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
+            if(Step::message) std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             // target_theta << -120, -20, 110, -90+shaker, 40, 0;
             // target_theta *= M_PI/180.0;
             setTargetPose(-192.0, -200.0, 385.0, -1.40, -0.09, 0.0);
             inverseKinematics();
 
             if(!shaker_wait.isWaiting(5))
+            // if(!shaker_wait.isWaiting(2))
             {
                 shaker_wait.reset();
                 updateStep(Step::post_release);
@@ -339,7 +355,7 @@ void sequence()
             break;
 
         case Step::shake2:    // Shake2
-            std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
+            if(Step::message) std::cout << "SHAKE  SHAKE  SHAKE  SHAKE" << std::endl;
             // target_theta << -120, -20, 110, -90-shaker, 40, 0;
             // target_theta *= M_PI/180.0;
             setTargetPose(-194.0, -202.0, 408.0, -1.75, -0.09, 0.0);
@@ -352,7 +368,7 @@ void sequence()
             break;
 
         case Step::post_release:    // PostRelease
-            std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
+            if(Step::message) std::cout << "RELEASE  RELEASE  RELEASE  RELEASE" << std::endl;
             setTargetPose(-0.1, -235.0, 405.0, -1.57, 0.0, 0.0);
             inverseKinematics();
 
@@ -377,7 +393,7 @@ void sequence()
             break;
 
         case Step::finish:    // Finish
-            std::cout << "FINISH  FINISH  FINISH  FINISH" << std::endl;
+            if(Step::message) std::cout << "FINISH  FINISH  FINISH  FINISH" << std::endl;
             enable_enable = false;
 
             setTargetPose(0.0, -200.0, 100.0);
@@ -436,36 +452,42 @@ int main(int argc, char **argv)
     #ifndef SIMULATION
     motor0.setTorqueEnable(false);
     motor0.setVelocityLimit(15);
+    motor0.setCurrentLimit(22740.0/16.0);    // 710    // 64x,32x,16o
     motor0.setHomingOffset(homing_offset(0,0));
     motor0.setPositionGain(15, 0, 0);
     motor0.setTorqueEnable(true);
     
     motor1.setTorqueEnable(false);
     motor1.setVelocityLimit(15);
+    motor1.setCurrentLimit(1860.0/8.0);    // 16x,8o
     motor1.setHomingOffset(36.3+homing_offset(1,0));
     motor1.setPositionGain(15, 0, 0);
     motor1.setTorqueEnable(true);
     
     motor2.setTorqueEnable(false);
     motor2.setVelocityLimit(15);
+    motor2.setCurrentLimit(930.0/4.0);    // 8x,4o
     motor2.setHomingOffset(45+homing_offset(2,0));
     motor2.setPositionGain(15, 0, 0);
     motor2.setTorqueEnable(true);
     
     motor3.setTorqueEnable(false);
     motor3.setVelocityLimit(15);
+    motor3.setCurrentLimit(930.0/4.0);    // 8x,4o
     motor3.setHomingOffset(homing_offset(3,0));
     motor3.setPositionGain(15, 0, 0);
     motor3.setTorqueEnable(true);
     
     motor4.setTorqueEnable(false);
     motor4.setVelocityLimit(15);
+    motor4.setCurrentLimit(1395.0/8.0);    // 16x,8o
     motor4.setHomingOffset(homing_offset(4,0));
     motor4.setPositionGain(15, 0, 0);
     motor4.setTorqueEnable(true);
     
     motor5.setTorqueEnable(false);
     motor5.setVelocityLimit(15);
+    motor5.setCurrentLimit(1395.0/8.0);
     motor5.setHomingOffset(homing_offset(5,0));
     motor3.setPositionGain(15, 0, 0);
     motor5.setTorqueEnable(true);
@@ -489,8 +511,9 @@ int main(int argc, char **argv)
         
         sequence();
         
-        std::cout << now_pose << std::endl;
-        std::cout << target_theta*180.0/M_PI << std::endl;
+        std::cout << val << std::endl;
+        // std::cout << now_pose << std::endl;
+        // std::cout << target_theta*180.0/M_PI << std::endl;
         
         if(is_valid)
         {
@@ -536,9 +559,9 @@ bool Wait::isWaiting(double seconds)
 
     _duration = _end-_start;
 
-    _duration_seconds = _duration.toSec();;
+    _duration_seconds = _duration.toSec();
 
-    std::cout << _duration_seconds << std::endl;
+    // std::cout << _duration_seconds << std::endl;
 
     if(_duration_seconds < seconds)
     {
@@ -659,7 +682,7 @@ void emagencyStop()
 }
 void neutral()
 {
-    std::cout << "NEUTRAL  NEUTRAL  NEUTRAL  NEUTRAL"  << std::endl;
+    if(Step::message) std::cout << "NEUTRAL  NEUTRAL  NEUTRAL  NEUTRAL"  << std::endl;
     setTargetPose(250.0, 0.0, 250.0);
     inverseKinematics();
     return;
@@ -742,6 +765,7 @@ void inverseKinematics()
     if(is_first_inverse_kinematics)
     {
         start_pose = forwardKinematics();
+        duration_time = getTargetDistance()/linear_velocity;
         start_time = ros::Time::now();
         is_first_inverse_kinematics = false;
     }
@@ -839,6 +863,11 @@ void inverseKinematics()
         #endif
     }
     is_valid_old = is_valid;
+}
+
+double getTargetDistance()
+{
+    return sqrt(pow(target_pose.position.x-start_pose.position.x,2)+pow(target_pose.position.y-start_pose.position.y,2)+pow(target_pose.position.z-start_pose.position.z,2));
 }
 
 void tf_broadcaster(Eigen::Matrix<double, 6, 1> sim_theta)
