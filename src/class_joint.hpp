@@ -58,6 +58,7 @@ class Joint
 
         // Simulation
         Eigen::Matrix<double, 3, 1> simulationLink();
+        double simulationLink(char axis);
         double simulationAngle(char axis);
         double simulationAngle();
         double simulationAngularVelocity(char axis);
@@ -182,6 +183,17 @@ void Joint::print()
 Eigen::Matrix<double, 3, 1> Joint::simulationLink()
 {
     return _link*10e-3;
+}
+double Joint::simulationLink(char axis)
+{
+    if(axis == 'x') return _link(0,0);
+    if(axis == 'y') return _link(1,0);
+    if(axis == 'z') return _link(2,0);
+    else
+    {
+        std::cout << "axis must be x, y or z" << std::endl;
+        return 0.0;
+    }
 }
 double Joint::simulationAngle(char axis)
 {
