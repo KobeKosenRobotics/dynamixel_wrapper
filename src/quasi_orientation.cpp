@@ -69,7 +69,7 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> sim_theta);
 // Sequence
 namespace Step
 {
-    bool message = true;
+    bool message = false;
     const int emagency             = 0,
               stay_neutral         = emagency+5,
               stay                 = stay_neutral+5,
@@ -86,10 +86,13 @@ namespace Step
               shake2               = shake1+5,
               post_release         = shake2+5,
               finish_neutral       = post_release+5,
-              finish               = finish_neutral+5;
+              finish               = finish_neutral+5,
+              position_control     = finish+5;
+
 };
 
 int status = Step::stay_neutral;
+// int status = Step::position_control;
 int scan_count = 0;
 int shaker = 10;
 Wait wait, shaker_wait;
@@ -127,6 +130,7 @@ double duration_time = 3.0, linear_velocity = 200.0;    // linear_velocity[mm/s]
 bool is_first_inverse_kinematics = true;
 
 // Euler Orientation
+Eigen::Matrix<double, 3, 1> euler;
 Eigen::Matrix<double, 3, 1> sim_euler;
 double e0, e1, e2;
 
@@ -404,6 +408,12 @@ void sequence()
                 updateStep(Step::stay);
             }
             break;
+        
+        case Step::position_control:
+            // setTargetPose(100, 100, 100, 70.0*M_PI/180.0, 30.0*M_PI/180.0, 40.0*M_PI/180.0);
+            setTargetPose(100, 100, 100, 0.0, 0.0, 0.0);
+            inverseKinematics();
+            break;
             
         default:
             nextStep();
@@ -511,7 +521,9 @@ int main(int argc, char **argv)
         
         sequence();
         
-        std::cout << val << std::endl;
+        // std::cout << val << std::endl;
+        std::cout << euler << std::endl << std::endl;
+        std::cout << sim_theta << std::endl;
         // std::cout << now_pose << std::endl;
         // std::cout << target_theta*180.0/M_PI << std::endl;
         
@@ -746,6 +758,39 @@ geometry_msgs::Pose forwardKinematics()
     // Position
     Eigen::Matrix<double, 3, 1> position;
     position = link_offset+rotation[0]*(link0+rotation[1]*(link1+rotation[2]*(link2+rotation[3]*(link3+rotation[4]*(link4+rotation[5]*link5)))));
+
+    // Euler
+    Eigen::Matrix<double, 3, 3> rotation_all;
+    rotation_all = rotation[0]*rotation[1]*rotation[2]*rotation[3]*rotation[4]*rotation[5];
+    // Eigen::Matrix<double, 3, 1> euler;
+    euler(1,0) = -asin(rotation_all(2,0));
+    euler(0,0) = acos(rotation_all(0,0)/cos(euler(1,0)));
+    if(rotation_all(1,0)/cos(euler(1,0)) < 0)
+    {
+        euler(0,0) *= (-1);
+    }
+    euler(2,0) = acos(rotation_all(2,2)/cos(euler(1,0)));
+    if(rotation_all(2,1)/cos(euler(1,0)) < 0)
+    {
+        euler(2,0) *= (-1);
+    }
+    
+    // t1 = 0.13455;
+    // t2 = 0.0349773;
+    // t3 = 2.67944;
+    // t4 = 1.22173;
+    // t5 = 0.950773;
+    // t6 = 0.698132;
+    // t1 = 0.785398;
+    // t2 = -0.0885796;
+    // t3 = 2.5422;
+    // t4 = 0;
+    // t5 = 0.68797;
+    // t6 = 0;
+    // R1=RotMat(t1,'z'); R2=RotMat(t2,'y'); R3=RotMat(t3,'y'); R4=RotMat(t4,'z'); R5=RotMat(t5,'y'); R6=RotMat(t6,'z');
+    // RTOT=R1*R2*R3*R4*R5*R6;
+    // hikaku = rotm2eul(RTOT,'ZYX');
+
 
     // Matrix To Pose
     geometry_msgs::Pose pose;
