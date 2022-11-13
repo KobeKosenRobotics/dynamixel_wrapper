@@ -18,7 +18,9 @@
 namespace dynamixel_wrapper{
 class dynamixel_wrapper{
     public:
+    dynamixel_wrapper();
     dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, int operatingMode);
+    void initialize(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, int operatingMode);
     void write(dynamixel_wrapper_config_item item, int value);
     uint32_t read(dynamixel_wrapper_config_item item);
     int32_t read_signed(dynamixel_wrapper_config_item item);
@@ -79,7 +81,17 @@ class dynamixel_wrapper{
     dynamixel_wrapper_base* dxl_base_;
     dynamixel_wrapper_config motor_config_;
 };
+dynamixel_wrapper::dynamixel_wrapper(){}
 dynamixel_wrapper::dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, int operatingMode){
+    id_=id;
+    dxl_base_= &dxl_base;
+    motor_config_=motor_config;
+    setTorqueEnable(false);
+    setOperatingMode(operatingMode);
+    setTorqueEnable(true);
+}
+void dynamixel_wrapper::initialize(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, int operatingMode)
+{
     id_=id;
     dxl_base_= &dxl_base;
     motor_config_=motor_config;
