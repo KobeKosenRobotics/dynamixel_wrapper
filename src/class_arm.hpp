@@ -80,12 +80,12 @@ void Arm::setAngle(Eigen::Matrix<double, 6, 1> angle_rad)
 void Arm::print()
 {
     std::cout << 
-    joint0.simulationAngle() << "  " << 
-    joint1.simulationAngle() << "  " << 
-    joint2.simulationAngle() << "  " << 
-    joint3.simulationAngle() << "  " << 
-    joint4.simulationAngle() << "  " << 
-    joint5.simulationAngle() << std::endl;
+    joint0.simulationAngle('z') << "  " << 
+    joint1.simulationAngle('y') << "  " << 
+    joint2.simulationAngle('y') << "  " << 
+    joint3.simulationAngle('z') << "  " << 
+    joint4.simulationAngle('y') << "  " << 
+    joint5.simulationAngle('z') << std::endl;
 }
 
 void Arm::tf_broadcaster()
@@ -102,8 +102,8 @@ void Arm::tf_broadcaster()
     transformStamped.transform.translation.y = joint_offset.simulationLink('y');
     transformStamped.transform.translation.z = joint_offset.simulationLink('z');
     
-    // q.setRPY(joint0.simulationAngle('x'), joint0.simulationAngle('y'), joint0.simulationAngle('z'));
-    q.setRPY(0, 0, joint0.simulationAngle());
+    q.setRPY(joint0.simulationAngle('x'), joint0.simulationAngle('y'), joint0.simulationAngle('z'));
+    // q.setRPY(0, 0, joint0.simulationAngle());
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -119,8 +119,8 @@ void Arm::tf_broadcaster()
     transformStamped.transform.translation.y = joint0.simulationLink('y');
     transformStamped.transform.translation.z = joint0.simulationLink('z');
     
-    // q.setRPY(joint1.simulationAngle('x'), joint1.simulationAngle('y'), joint1.simulationAngle('z'));
-    q.setRPY(0,joint1.simulationAngle(), 0);
+    q.setRPY(joint1.simulationAngle('x'), joint1.simulationAngle('y'), joint1.simulationAngle('z'));
+    // q.setRPY(0,joint1.simulationAngle(), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -136,8 +136,8 @@ void Arm::tf_broadcaster()
     transformStamped.transform.translation.y = joint1.simulationLink('y');
     transformStamped.transform.translation.z = joint1.simulationLink('z');
     
-    // q.setRPY(joint2.simulationAngle('x'), joint2.simulationAngle('y'), joint2.simulationAngle('z'));
-    q.setRPY(0,joint2.simulationAngle(), 0);
+    q.setRPY(joint2.simulationAngle('x'), joint2.simulationAngle('y'), joint2.simulationAngle('z'));
+    // q.setRPY(0,joint2.simulationAngle(), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -153,8 +153,8 @@ void Arm::tf_broadcaster()
     transformStamped.transform.translation.y = joint2.simulationLink('y');
     transformStamped.transform.translation.z = joint2.simulationLink('z');
     
-    // q.setRPY(joint3.simulationAngle('x'), joint3.simulationAngle('y'), joint3.simulationAngle('z'));
-    q.setRPY(0, 0, joint3.simulationAngle());
+    q.setRPY(joint3.simulationAngle('x'), joint3.simulationAngle('y'), joint3.simulationAngle('z'));
+    // q.setRPY(0, 0, joint3.simulationAngle());
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -170,8 +170,8 @@ void Arm::tf_broadcaster()
     transformStamped.transform.translation.y = joint3.simulationLink('y');
     transformStamped.transform.translation.z = joint3.simulationLink('z');
     
-    // q.setRPY(joint4.simulationAngle('x'), joint4.simulationAngle('y'), joint4.simulationAngle('z'));
-    q.setRPY(0,joint4.simulationAngle(), 0);
+    q.setRPY(joint4.simulationAngle('x'), joint4.simulationAngle('y'), joint4.simulationAngle('z'));
+    // q.setRPY(0,joint4.simulationAngle(), 0);
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -187,8 +187,8 @@ void Arm::tf_broadcaster()
     transformStamped.transform.translation.y = joint4.simulationLink('y');
     transformStamped.transform.translation.z = joint4.simulationLink('z');
     
-    // q.setRPY(joint5.simulationAngle('x'), joint5.simulationAngle('y'), joint5.simulationAngle('z'));
-    q.setRPY(0, 0, joint5.simulationAngle());
+    q.setRPY(joint5.simulationAngle('x'), joint5.simulationAngle('y'), joint5.simulationAngle('z'));
+    // q.setRPY(0, 0, joint5.simulationAngle());
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();

@@ -132,12 +132,14 @@ void Joint::setGoalPosition(double motor_angle_rad)
     if(isnan(motor_angle_rad))
     {
         _is_valid = false;
+        if(_is_valid != _is_valid_old)
+        {
+            setLED(255, 0, 0);
+        }
+        _is_valid_old = _is_valid;
+        return;
     }
-    if(_is_valid != _is_valid_old)
-    {
-        setLED(_is_valid?255:0, _is_valid?0:255, 0);
-    }
-    if(_is_valid)
+    else
     {
         _motor_angle = motor_angle_rad;
         #ifndef SIMULATION
@@ -147,7 +149,6 @@ void Joint::setGoalPosition(double motor_angle_rad)
         _simulation_angle = _motor_angle;
         #endif
     }
-    _is_valid_old = _is_valid_old;
 }
 
 void Joint::setGOalVelocity(double motor_angular_velocity_radps)
@@ -155,22 +156,23 @@ void Joint::setGOalVelocity(double motor_angular_velocity_radps)
     if(isnan(motor_angular_velocity_radps))
     {
         _is_valid = false;
+        if(_is_valid != _is_valid_old)
+        {
+            setLED(255, 0, 0);
+        }
+        _is_valid_old = _is_valid;
+        return;
     }
-    if(_is_valid != _is_valid_old)
-    {
-        setLED(_is_valid?255:0, _is_valid?0:255, 0);
-    }
-    if(_is_valid)
+    else
     {
         _motor_angular_velocity = motor_angular_velocity_radps;
         #ifndef SIMULATION
-        _motor.setGoalVelocity(_motor_angular_velocity*radps2rpm);
+        _motor.setGoalPosition(_motor_angular_velocity*radps2rpm);
         #endif
         #ifdef SIMULATION
         _simulation_angular_velocity = _motor_angular_velocity;
         #endif
     }
-    _is_valid_old = _is_valid_old;
 }
 
 void Joint::print()
@@ -182,13 +184,13 @@ void Joint::print()
 // Simulation
 Eigen::Matrix<double, 3, 1> Joint::simulationLink()
 {
-    return _link*10e-3;
+    return _link/1000.0;
 }
 double Joint::simulationLink(char axis)
 {
-    if(axis == 'x') return _link(0,0);
-    if(axis == 'y') return _link(1,0);
-    if(axis == 'z') return _link(2,0);
+    if(axis == 'x') return _link(0,0)/1000.0;
+    if(axis == 'y') return _link(1,0)/1000.0;
+    if(axis == 'z') return _link(2,0)/1000.0;
     else
     {
         std::cout << "axis must be x, y or z" << std::endl;

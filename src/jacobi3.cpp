@@ -36,17 +36,15 @@ int main(int argc, char **argv)
 
     Arm arm;
     Eigen::Matrix<double, 6, 1> angle;
-    // angle << 0.0, M_PI/3.0, M_PI/3.0, 0.0, M_PI/3.0, 0.0;
-    
+    angle << 0.0, M_PI/3.0, M_PI/3.0, 0.0, M_PI/3.0, 0.0;
+    // angle << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
     // angle << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
     while(nh.ok())
     {
-        angle << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
         arm.setAngle(angle);
         arm.tf_broadcaster();
         arm.print();
-        angle << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
         ros::spinOnce();
         loop_rate.sleep();
