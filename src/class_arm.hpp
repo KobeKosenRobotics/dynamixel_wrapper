@@ -38,7 +38,8 @@ class Arm
         Joint joint_offset, joint0, joint1, joint2, joint3, joint4, joint5;
         
         void setAngle(Eigen::Matrix<double, 6, 1> angle_rad);
-        void print();
+        void setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps);
+        void printSimulationRotationVariable();
         void update();
         void forwardKinematics();
         void inverseKinematics();
@@ -58,13 +59,12 @@ void Arm::initialize()
     _dxl_base.initialize(_port_name, _baudrate);
     #endif
     joint_offset.initialize(  0.0, 0.0, 159.0, 'o');
-          joint0.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 1, _dxl_base, dynamixel_wrapper::PH54_200_S500_R, 4);
-          joint1.initialize( 30.0, 0.0, 264.0, 'y',  atan(30.0/264.0)                  , 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  4);
-          joint2.initialize(-30.0, 0.0, 258.0, 'y', -atan(30.0/264.0)+atan(-30.0/258.0), 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  4);
-          joint3.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  4);
-          joint4.initialize(  0.0, 0.0, 123.0, 'y',                  -atan(-30.0/258.0), 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  4);
-          joint5.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  4);
-    
+          joint0.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 1, _dxl_base, dynamixel_wrapper::PH54_200_S500_R, 1);
+          joint1.initialize( 30.0, 0.0, 264.0, 'y',  atan(30.0/264.0)                  , 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  1);
+          joint2.initialize(-30.0, 0.0, 258.0, 'y', -atan(30.0/264.0)+atan(-30.0/258.0), 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  1);
+          joint3.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  1);
+          joint4.initialize(  0.0, 0.0, 123.0, 'y',                  -atan(-30.0/258.0), 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
+          joint5.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
 }
 
 void Arm::setAngle(Eigen::Matrix<double, 6, 1> angle_rad)
@@ -77,15 +77,25 @@ void Arm::setAngle(Eigen::Matrix<double, 6, 1> angle_rad)
     joint5.setGoalPosition(angle_rad(5,0));
 }
 
-void Arm::print()
+void Arm::setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps)
+{
+    joint0.setGOalVelocity(angular_velocity_radps(0,0));
+    joint1.setGOalVelocity(angular_velocity_radps(1,0));
+    joint2.setGOalVelocity(angular_velocity_radps(2,0));
+    joint3.setGOalVelocity(angular_velocity_radps(3,0));
+    joint4.setGOalVelocity(angular_velocity_radps(4,0));
+    joint5.setGOalVelocity(angular_velocity_radps(5,0));
+}
+
+void Arm::printSimulationRotationVariable()
 {
     std::cout << 
-    joint0.simulationAngle('z') << "  " << 
-    joint1.simulationAngle('y') << "  " << 
-    joint2.simulationAngle('y') << "  " << 
-    joint3.simulationAngle('z') << "  " << 
-    joint4.simulationAngle('y') << "  " << 
-    joint5.simulationAngle('z') << std::endl;
+    joint0.simulationRotationVariable() << "  " << 
+    joint1.simulationRotationVariable() << "  " << 
+    joint2.simulationRotationVariable() << "  " << 
+    joint3.simulationRotationVariable() << "  " << 
+    joint4.simulationRotationVariable() << "  " << 
+    joint5.simulationRotationVariable() << std::endl;
 }
 
 void Arm::tf_broadcaster()

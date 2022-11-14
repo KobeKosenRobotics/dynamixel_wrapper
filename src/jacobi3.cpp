@@ -27,30 +27,31 @@
 
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI;
 
-Eigen::Matrix<double, 6, 1> angle;
+Eigen::Matrix<double, 6, 1> rotation;
 
-void joint_angle_cb(geometry_msgs::Pose::ConstPtr msg)
+void joint_rotation_cb(geometry_msgs::Pose::ConstPtr msg)
 {
-    angle << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
+    rotation << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
 }
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "Arm");
     ros::NodeHandle nh;
-    double rate = 10000.0;
+    double rate = 100.0;
     ros::Rate loop_rate(rate);
 
     // Subscriber
-    ros::Subscriber joint_angle_sub = nh.subscribe<geometry_msgs::Pose>("joint_angle", 10, joint_angle_cb);
+    ros::Subscriber joint_rotation_sub = nh.subscribe<geometry_msgs::Pose>("joint_rotation", 10, joint_rotation_cb);
 
     Arm arm;
 
     while(nh.ok())
     {
-        arm.setAngle(angle);
+        // arm.setAngle(rotation);
+        arm.setAngularVelocity(rotation);
         arm.tf_broadcaster();
-        arm.print();
+        arm.printSimulationRotationVariable();
 
         ros::spinOnce();
         loop_rate.sleep();
