@@ -193,7 +193,7 @@ double Joint::simulationLink(char axis)
     if(axis == 'z') return _link(2,0)/1000.0;
     else
     {
-        std::cout << "axis must be x, y or z" << std::endl;
+        std::cout << "error: axis must be x, y or z" << std::endl;
         return 0.0;
     }
 }

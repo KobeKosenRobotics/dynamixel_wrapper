@@ -27,6 +27,13 @@
 
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI;
 
+Eigen::Matrix<double, 6, 1> angle;
+
+void joint_angle_cb(geometry_msgs::Pose::ConstPtr msg)
+{
+    angle << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "Arm");
@@ -34,11 +41,10 @@ int main(int argc, char **argv)
     double rate = 10000.0;
     ros::Rate loop_rate(rate);
 
+    // Subscriber
+    ros::Subscriber joint_angle_sub = nh.subscribe<geometry_msgs::Pose>("joint_angle", 10, joint_angle_cb);
+
     Arm arm;
-    Eigen::Matrix<double, 6, 1> angle;
-    angle << 0.0, M_PI/3.0, M_PI/3.0, 0.0, M_PI/3.0, 0.0;
-    // angle << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
-    // angle << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
     while(nh.ok())
     {
