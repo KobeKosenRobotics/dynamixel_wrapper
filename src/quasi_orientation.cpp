@@ -522,9 +522,10 @@ int main(int argc, char **argv)
         sequence();
         
         // std::cout << val << std::endl;
-        std::cout << euler << std::endl << std::endl;
-        std::cout << sim_theta << std::endl;
         // std::cout << now_pose << std::endl;
+        // std::cout << euler << std::endl << std::endl;
+        // std::cout << sim_theta << std::endl;
+        
         // std::cout << target_theta*180.0/M_PI << std::endl;
         
         if(is_valid)
@@ -774,22 +775,20 @@ geometry_msgs::Pose forwardKinematics()
     {
         euler(2,0) *= (-1);
     }
+
+    // euler(x) <-> euler(z) why??
+
+    std::cout << rotation_all-rotationZ(euler(0,0))*rotationY(euler(1,0))*rotationX(euler(2,0)) << std::endl;
     
-    // t1 = 0.13455;
-    // t2 = 0.0349773;
-    // t3 = 2.67944;
-    // t4 = 1.22173;
-    // t5 = 0.950773;
-    // t6 = 0.698132;
-    // t1 = 0.785398;
-    // t2 = -0.0885796;
-    // t3 = 2.5422;
+    // t1 = 1.5708;
+    // t2 = 0.127308;
+    // t3 = 2.31962;
     // t4 = 0;
-    // t5 = 0.68797;
+    // t5 = 0.694664;
     // t6 = 0;
     // R1=RotMat(t1,'z'); R2=RotMat(t2,'y'); R3=RotMat(t3,'y'); R4=RotMat(t4,'z'); R5=RotMat(t5,'y'); R6=RotMat(t6,'z');
     // RTOT=R1*R2*R3*R4*R5*R6;
-    // hikaku = rotm2eul(RTOT,'ZYX');
+    // hikaku = rotm2eul(RTOT,'XYZ');
 
 
     // Matrix To Pose
@@ -922,6 +921,21 @@ void tf_broadcaster(Eigen::Matrix<double, 6, 1> sim_theta)
     static tf2_ros::TransformBroadcaster br;
     static geometry_msgs::TransformStamped transformStamped;
     static tf2::Quaternion q;
+
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "arm_base_link";
+    transformStamped.child_frame_id = "euler";
+    transformStamped.transform.translation.x = now_pose.position.x/1000.0;
+    transformStamped.transform.translation.y = now_pose.position.y/1000.0;
+    transformStamped.transform.translation.z = now_pose.position.z/1000.0;
+    
+    q.setRPY(euler(2,0), euler(1,0), euler(0,0));
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
     
     // Joint 0
     transformStamped.header.stamp = ros::Time::now();
