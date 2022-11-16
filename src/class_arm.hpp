@@ -36,7 +36,8 @@ class Arm
 
         Eigen::Matrix<double, 3, 3> _rotation_all;
         Eigen::Matrix<double, 3, 1> _position, _euler;
-        geometry_msgs::Pose _pose;
+        Eigen::Matrix<double, 6, 6> _jacobi;
+        Eigen::Matrix<double, 6, 1> _pose, _target_pose;
 
     public:
         Arm();
@@ -54,10 +55,12 @@ class Arm
         void getEulerAngle();
         void getPose();
 
-        // karisome
-        void update();
-        void forwardKinematics();
-        void inverseKinematics();
+        Eigen::Matrix<double, 6, 1> inverseKinematics();
+        Eigen::Matrix<double, 6, 6> getJacobian();
+        Eigen::Matrix<double, 3, 6> getTranslationJacobian();
+        Eigen::Matrix<double, 3, 6> getRotationJacobian();
+
+        // Simulation
         void tf_broadcaster();
 };
 
@@ -74,12 +77,12 @@ void Arm::initialize()
     _dxl_base.initialize(_port_name, _baudrate);
     #endif
     joint_offset.initialize(  0.0, 0.0, 159.0, 'o');
-          joint0.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 1, _dxl_base, dynamixel_wrapper::PH54_200_S500_R, 1);
-          joint1.initialize( 30.0, 0.0, 264.0, 'y',  atan(30.0/264.0)                  , 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  1);
-          joint2.initialize(-30.0, 0.0, 258.0, 'y', -atan(30.0/264.0)+atan(-30.0/258.0), 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  1);
-          joint3.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  1);
-          joint4.initialize(  0.0, 0.0, 123.0, 'y',                  -atan(-30.0/258.0), 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
-          joint5.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
+          joint0.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0,  0.0, 1, _dxl_base, dynamixel_wrapper::PH54_200_S500_R, 1);
+          joint1.initialize( 30.0, 0.0, 264.0, 'y',  atan(30.0/264.0)                  , 36.3, 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  1);
+          joint2.initialize(-30.0, 0.0, 258.0, 'y', -atan(30.0/264.0)+atan(-30.0/258.0), 45.0, 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  1);
+          joint3.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0,  0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  1);
+          joint4.initialize(  0.0, 0.0, 123.0, 'y',                  -atan(-30.0/258.0),  0.0, 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
+          joint5.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0,  0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
 }
 
 void Arm::print()
@@ -169,13 +172,18 @@ void Arm::getPose()
     getAngle();
     getPosition();
     getEulerAngle();
-    _pose.position.x = _position(0,0);
-    _pose.position.y = _position(1,0);
-    _pose.position.z = _position(2,0);
-    _pose.orientation.x = _euler(0,0);
-    _pose.orientation.y = _euler(1,0);
-    _pose.orientation.z = _euler(2,0);
+    _pose(0,0) = _position(0,0);
+    _pose(1,0) = _position(1,0);
+    _pose(2,0) = _position(2,0);
+    _pose(3,0) = _euler(0,0);
+    _pose(4,0) = _euler(1,0);
+    _pose(5,0) = _euler(2,0);
 }
+
+// Eigen::Matrix<double, 6, 1> Arm::inverseKinematics()
+// {
+//     return
+// }
 
 void Arm::tf_broadcaster()
 {

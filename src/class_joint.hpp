@@ -37,6 +37,7 @@ class Joint
         bool _is_valid, _is_valid_old = true;
         double _sensor_angle, _sensor_angular_velocity;
         double _simulation_angle, _simulation_angular_velocity, _total_simulation_angular_velocity;
+        double _global_theta;
         double _motor_angle, _motor_angular_velocity;
 
         Eigen::Matrix<double, 3, 3> _rotation_matrix;
@@ -46,12 +47,13 @@ class Joint
     public:
         Joint();
         void initialize(double link_x, double link_y, double link_z, char axis);
-        void initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode);
+        void initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, double adjust_deg, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode);
         
-        void setHomingOffset(double homing_offset);
+        void setHomingOffset(double homing_offset, double adjust_deg);
         void setTorqueEnable(bool state);
         void setLED(int red, int green, int blue);
 
+        double getGlobalAngle();
         double getPresentPosition();
         double getPresentVelocity();
         void setGoalPosition(double motor_angle_rad);
@@ -75,7 +77,7 @@ void Joint::initialize(double link_x, double link_y, double link_z, char axis)
     _link << link_x, link_y, link_z;
 }
 
-void Joint::initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode)
+void Joint::initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, double adjust_deg, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode)
 {
     initialize(link_x, link_y, link_z, axis);
     _operating_mode = operating_mode;
@@ -83,7 +85,7 @@ void Joint::initialize(double link_x, double link_y, double link_z, char axis, d
     _motor.initialize(id, dxl_base, motor_config, operating_mode);
     #endif
     setTorqueEnable(false);
-    setHomingOffset(homing_offset);
+    setHomingOffset(homing_offset, adjust_deg);
     _is_first_simulation = true;
 }
 
@@ -94,12 +96,12 @@ void Joint::setTorqueEnable(bool state)
     #endif
 }
 
-void Joint::setHomingOffset(double homing_offset)
+void Joint::setHomingOffset(double homing_offset, double adjust_deg)
 {
     setTorqueEnable(false);
     _homing_offset = homing_offset;
     #ifndef SIMULATION
-    _motor.setHomingOffset(_homing_offset*rad2deg);
+    _motor.setHomingOffset(_homing_offset*rad2deg+adjust_deg);
     #endif
 }
 
@@ -130,6 +132,11 @@ double Joint::getPresentVelocity()
     _sensor_angular_velocity = _simulation_angular_velocity;
     #endif
     return _sensor_angular_velocity;
+}
+
+double Joint::getGlobalAngle()
+{
+    return _sensor_angle-_homing_offset;
 }
 
 void Joint::setGoalPosition(double motor_angle_rad)
