@@ -53,20 +53,19 @@ class Joint
         void setTorqueEnable(bool state);
         void setLED(int red, int green, int blue);
 
-        double getGlobalAngle();
         double getPresentPosition();
         double getPresentVelocity();
         void setGoalPosition(double motor_angle_rad);
         void setGOalVelocity(double motor_angular_velocity_radps);
 
+        double getGlobalAngle();
         Eigen::Matrix<double, 3, 3> getRotationMatrix();
         Eigen::Matrix<double, 3, 1> getLink();
 
         // Simulation
+        void simulationUpdate();
         double simulationLink(char axis);
         double simulationAngle(char axis);
-        double simulationAngle();
-        double simulationRotationVariable();
 };
 
 Joint::Joint(){}
@@ -118,7 +117,7 @@ double Joint::getPresentPosition()
     _sensor_angle = _motor.getPresentPosition()*deg2rad;
     #endif
     #ifdef SIMULATION
-    _sensor_angle = simulationAngle()+_homing_offset;
+    _sensor_angle = _simulation_angle;
     #endif
     return _sensor_angle;
 }
@@ -132,11 +131,6 @@ double Joint::getPresentVelocity()
     _sensor_angular_velocity = _simulation_angular_velocity;
     #endif
     return _sensor_angular_velocity;
-}
-
-double Joint::getGlobalAngle()
-{
-    return _sensor_angle-_homing_offset;
 }
 
 void Joint::setGoalPosition(double motor_angle_rad)
@@ -187,25 +181,30 @@ void Joint::setGOalVelocity(double motor_angular_velocity_radps)
     }
 }
 
+double Joint::getGlobalAngle()
+{
+    return _sensor_angle-_homing_offset;
+}
+
 Eigen::Matrix<double, 3, 3> Joint::getRotationMatrix()
 {
     if(_axis == 'x')
     {
-        _rotation_matrix << 1.0,                               0.0,                                0.0, 
-                            0.0, cos(_sensor_angle-_homing_offset), -sin(_sensor_angle-_homing_offset),
-                            0.0, sin(_sensor_angle-_homing_offset),  cos(_sensor_angle-_homing_offset);
+        _rotation_matrix << 1.0,                   0.0,                    0.0, 
+                            0.0, cos(getGlobalAngle()), -sin(getGlobalAngle()),
+                            0.0, sin(getGlobalAngle()),  cos(getGlobalAngle());
     }
     else if(_axis == 'y')
     {
-        _rotation_matrix <<  cos(_sensor_angle-_homing_offset), 0.0, sin(_sensor_angle-_homing_offset),
-                                                           0.0, 1.0,                               0.0,
-                            -sin(_sensor_angle-_homing_offset), 0.0, cos(_sensor_angle-_homing_offset);
+        _rotation_matrix <<  cos(getGlobalAngle()), 0.0, sin(getGlobalAngle()),
+                                               0.0, 1.0,                   0.0,
+                            -sin(getGlobalAngle()), 0.0, cos(getGlobalAngle());
     }
     else if(_axis == 'z')
     {
-        _rotation_matrix << cos(_sensor_angle-_homing_offset), -sin(_sensor_angle-_homing_offset), 0.0,
-                            sin(_sensor_angle-_homing_offset),  cos(_sensor_angle-_homing_offset), 0.0,
-                                                          0.0,                                0.0, 1.0;
+        _rotation_matrix << cos(getGlobalAngle()), -sin(getGlobalAngle()), 0.0,
+                            sin(getGlobalAngle()),  cos(getGlobalAngle()), 0.0,
+                                              0.0,                    0.0, 1.0;
     }
     else
     {
@@ -222,6 +221,21 @@ Eigen::Matrix<double, 3, 1> Joint::getLink()
 }
 
 // Simulation
+void Joint::simulationUpdate()
+{
+    if(_operating_mode == 1)
+    {
+        if(_is_first_simulation)
+        {
+            _is_first_simulation = false;
+            _start_time_simulation = ros::Time::now();
+        }
+        _end_time_simulation = ros::Time::now();
+        _simulation_angle += (_end_time_simulation-_start_time_simulation).toSec()*_simulation_angular_velocity;
+        _start_time_simulation = _end_time_simulation;
+    }
+}
+
 double Joint::simulationLink(char axis)
 {
     if(axis == 'x') return _link(0,0)/1000.0;
@@ -234,37 +248,8 @@ double Joint::simulationLink(char axis)
 
 double Joint::simulationAngle(char axis)
 {
-    if(axis == _axis)
-    {
-        return simulationAngle();
-    }
+    if(axis == _axis) return getGlobalAngle();
     return 0.0;
 }
 
-double Joint::simulationAngle()
-{
-    if(_operating_mode == 1)
-    {
-        if(_is_first_simulation)
-        {
-            _is_first_simulation = false;
-            _start_time_simulation = ros::Time::now();
-            _total_simulation_angular_velocity = _simulation_angle-_homing_offset;
-            return _total_simulation_angular_velocity;
-        }
-        _end_time_simulation = ros::Time::now();
-        _total_simulation_angular_velocity += (_end_time_simulation-_start_time_simulation).toSec()*_simulation_angular_velocity;
-        _start_time_simulation = _end_time_simulation;
-        return _total_simulation_angular_velocity;
-    }
-    else if(_operating_mode == 4) return _simulation_angle-_homing_offset;
-    return 0.0;
-}
-
-double Joint::simulationRotationVariable()
-{
-    if(_operating_mode == 1) return _simulation_angular_velocity;
-    else if(_operating_mode == 4) return _simulation_angle;
-    return 0.0;
-}
 #endif

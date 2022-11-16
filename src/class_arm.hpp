@@ -61,6 +61,7 @@ class Arm
         Eigen::Matrix<double, 3, 6> getRotationJacobian();
 
         // Simulation
+        void simulationUpdate();
         void tf_broadcaster();
 };
 
@@ -89,6 +90,7 @@ void Arm::print()
 {
     std::cout
     << _pose
+    << std::endl
     << std::endl;
 }
 
@@ -180,10 +182,15 @@ void Arm::getPose()
     _pose(5,0) = _euler(2,0);
 }
 
-// Eigen::Matrix<double, 6, 1> Arm::inverseKinematics()
-// {
-//     return
-// }
+void Arm::simulationUpdate()
+{
+    joint0.simulationUpdate();
+    joint1.simulationUpdate();
+    joint2.simulationUpdate();
+    joint3.simulationUpdate();
+    joint4.simulationUpdate();
+    joint5.simulationUpdate();
+}
 
 void Arm::tf_broadcaster()
 {
@@ -209,7 +216,7 @@ void Arm::tf_broadcaster()
 
     transformStamped.header.stamp = ros::Time::now();
     transformStamped.header.frame_id = "arm_base_link";
-    transformStamped.child_frame_id = "euler1";
+    transformStamped.child_frame_id = "eulerX";
     transformStamped.transform.translation.x = _position(0,0)/1000.0;
     transformStamped.transform.translation.y = _position(1,0)/1000.0;
     transformStamped.transform.translation.z = _position(2,0)/1000.0;
@@ -223,8 +230,8 @@ void Arm::tf_broadcaster()
     br.sendTransform(transformStamped);
 
     transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "euler1";
-    transformStamped.child_frame_id = "euler2";
+    transformStamped.header.frame_id = "eulerX";
+    transformStamped.child_frame_id = "eulerXY";
     transformStamped.transform.translation.x = 0;
     transformStamped.transform.translation.y = 0;
     transformStamped.transform.translation.z = 0;
@@ -238,8 +245,8 @@ void Arm::tf_broadcaster()
     br.sendTransform(transformStamped);
 
     transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "euler2";
-    transformStamped.child_frame_id = "euler3";
+    transformStamped.header.frame_id = "eulerXY";
+    transformStamped.child_frame_id = "eulerXYZ";
     transformStamped.transform.translation.x = 0;
     transformStamped.transform.translation.y = 0;
     transformStamped.transform.translation.z = 0;

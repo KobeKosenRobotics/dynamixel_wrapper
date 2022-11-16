@@ -48,10 +48,13 @@ int main(int argc, char **argv)
 
     while(nh.ok())
     {
-        // arm.setAngle(rotation);
         arm.setAngularVelocity(rotation);
+
+        arm.simulationUpdate();
         arm.tf_broadcaster();
+        
         arm.getPose();
+        
         arm.print();
 
         ros::spinOnce();
