@@ -28,18 +28,33 @@ class Arm
 {
     private:
         const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI;
+
         dynamixel_wrapper::dynamixel_wrapper_base _dxl_base;
+
+        Eigen::Matrix<double, 6, 1> _sensor_angle, _sensor_angular_velocity;
+        Eigen::Matrix<double, 6, 1> _motor_angle, _motor_angular_velocity;
+
+        Eigen::Matrix<double, 3, 3> _rotation_all;
+        Eigen::Matrix<double, 3, 1> _position, _euler;
+        geometry_msgs::Pose _pose;
 
     public:
         Arm();
-
         void initialize();
-        
         Joint joint_offset, joint0, joint1, joint2, joint3, joint4, joint5;
         
+        void print();
+
+        Eigen::Matrix<double, 6, 1> getAngle();
+        Eigen::Matrix<double, 6, 1> getAngularVelocity();
         void setAngle(Eigen::Matrix<double, 6, 1> angle_rad);
         void setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps);
-        void printSimulationRotationVariable();
+
+        void getPosition();
+        void getEulerAngle();
+        void getPose();
+
+        // karisome
         void update();
         void forwardKinematics();
         void inverseKinematics();
@@ -67,35 +82,99 @@ void Arm::initialize()
           joint5.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
 }
 
+void Arm::print()
+{
+    std::cout
+    << _pose
+    << std::endl;
+}
+
+Eigen::Matrix<double, 6, 1> Arm::getAngle()
+{
+    _sensor_angle(0,0) = joint0.getPresentPosition();
+    _sensor_angle(1,0) = joint1.getPresentPosition();
+    _sensor_angle(2,0) = joint2.getPresentPosition();
+    _sensor_angle(3,0) = joint3.getPresentPosition();
+    _sensor_angle(4,0) = joint4.getPresentPosition();
+    _sensor_angle(5,0) = joint5.getPresentPosition();
+    return _sensor_angle;
+}
+
+Eigen::Matrix<double, 6, 1> Arm::getAngularVelocity()
+{
+    _sensor_angular_velocity(0,0) = joint0.getPresentVelocity();
+    _sensor_angular_velocity(1,0) = joint1.getPresentVelocity();
+    _sensor_angular_velocity(2,0) = joint2.getPresentVelocity();
+    _sensor_angular_velocity(3,0) = joint3.getPresentVelocity();
+    _sensor_angular_velocity(4,0) = joint4.getPresentVelocity();
+    _sensor_angular_velocity(5,0) = joint5.getPresentVelocity();
+    return _sensor_angular_velocity;
+}
+
 void Arm::setAngle(Eigen::Matrix<double, 6, 1> angle_rad)
 {
-    joint0.setGoalPosition(angle_rad(0,0));
-    joint1.setGoalPosition(angle_rad(1,0));
-    joint2.setGoalPosition(angle_rad(2,0));
-    joint3.setGoalPosition(angle_rad(3,0));
-    joint4.setGoalPosition(angle_rad(4,0));
-    joint5.setGoalPosition(angle_rad(5,0));
+    _motor_angle = angle_rad;
+    joint0.setGoalPosition(_motor_angle(0,0));
+    joint1.setGoalPosition(_motor_angle(1,0));
+    joint2.setGoalPosition(_motor_angle(2,0));
+    joint3.setGoalPosition(_motor_angle(3,0));
+    joint4.setGoalPosition(_motor_angle(4,0));
+    joint5.setGoalPosition(_motor_angle(5,0));
 }
 
 void Arm::setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps)
 {
-    joint0.setGOalVelocity(angular_velocity_radps(0,0));
-    joint1.setGOalVelocity(angular_velocity_radps(1,0));
-    joint2.setGOalVelocity(angular_velocity_radps(2,0));
-    joint3.setGOalVelocity(angular_velocity_radps(3,0));
-    joint4.setGOalVelocity(angular_velocity_radps(4,0));
-    joint5.setGOalVelocity(angular_velocity_radps(5,0));
+    _motor_angular_velocity = angular_velocity_radps;
+    joint0.setGOalVelocity(_motor_angular_velocity(0,0));
+    joint1.setGOalVelocity(_motor_angular_velocity(1,0));
+    joint2.setGOalVelocity(_motor_angular_velocity(2,0));
+    joint3.setGOalVelocity(_motor_angular_velocity(3,0));
+    joint4.setGOalVelocity(_motor_angular_velocity(4,0));
+    joint5.setGOalVelocity(_motor_angular_velocity(5,0));
 }
 
-void Arm::printSimulationRotationVariable()
+void Arm::getPosition()
 {
-    std::cout << 
-    joint0.simulationRotationVariable() << "  " << 
-    joint1.simulationRotationVariable() << "  " << 
-    joint2.simulationRotationVariable() << "  " << 
-    joint3.simulationRotationVariable() << "  " << 
-    joint4.simulationRotationVariable() << "  " << 
-    joint5.simulationRotationVariable() << std::endl;
+    _position = joint_offset.getRotationMatrix()*(joint_offset.getLink()+joint0.getRotationMatrix()*(joint0.getLink()+joint1.getRotationMatrix()*(joint1.getLink()+joint2.getRotationMatrix()*(joint2.getLink()+joint3.getRotationMatrix()*(joint3.getLink()+joint4.getRotationMatrix()*(joint4.getLink()+joint5.getRotationMatrix()*(joint5.getLink())))))));
+}
+
+void Arm::getEulerAngle()
+{
+    _rotation_all = joint0.getRotationMatrix()*joint1.getRotationMatrix()*joint2.getRotationMatrix()*joint3.getRotationMatrix()*joint4.getRotationMatrix()*joint5.getRotationMatrix();
+    _euler(1,0) = asin(_rotation_all(0,2));
+    _euler(0,0) = acos(_rotation_all(2,2)/cos(_euler(1,0)));
+    if(-_rotation_all(1,2)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
+    _euler(2,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
+    if(-_rotation_all(0,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
+
+    // Eigen::Matrix<double, 3, 3> rx, ry, rz, re;
+    // rx << 1.0,              0.0,               0.0, 
+    //       0.0, cos(_euler(0,0)), -sin(_euler(0,0)),
+    //       0.0, sin(_euler(0,0)),  cos(_euler(0,0));
+    
+    // ry <<  cos(_euler(1,0)), 0.0, sin(_euler(1,0)),
+    //                     0.0, 1.0,              0.0,
+    //       -sin(_euler(1,0)), 0.0, cos(_euler(1,0));
+    
+    // rz << cos(_euler(2,0)), -sin(_euler(2,0)), 0.0,
+    //       sin(_euler(2,0)),  cos(_euler(2,0)), 0.0,
+    //                    0.0,               0.0, 1.0;
+    
+    // re = rx*ry*rz;
+    // std::cout << _rotation_all-re << std::endl << std::endl;
+}
+
+void Arm::getPose()
+{
+    getAngle();
+    getPosition();
+    getEulerAngle();
+    _pose.position.x = _position(0,0);
+    _pose.position.y = _position(1,0);
+    _pose.position.z = _position(2,0);
+    _pose.orientation.x = _euler(0,0);
+    _pose.orientation.y = _euler(1,0);
+    _pose.orientation.z = _euler(2,0);
 }
 
 void Arm::tf_broadcaster()
@@ -103,6 +182,67 @@ void Arm::tf_broadcaster()
     static tf2_ros::TransformBroadcaster br;
     static geometry_msgs::TransformStamped transformStamped;
     static tf2::Quaternion q;
+
+    // Euler
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "arm_base_link";
+    transformStamped.child_frame_id = "euler";
+    transformStamped.transform.translation.x = _position(0,0)/1000.0;
+    transformStamped.transform.translation.y = _position(1,0)/1000.0;
+    transformStamped.transform.translation.z = _position(2,0)/1000.0;
+    
+    q.setRPY(_euler(2,0), _euler(1,0), _euler(1,0));
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "arm_base_link";
+    transformStamped.child_frame_id = "euler1";
+    transformStamped.transform.translation.x = _position(0,0)/1000.0;
+    transformStamped.transform.translation.y = _position(1,0)/1000.0;
+    transformStamped.transform.translation.z = _position(2,0)/1000.0;
+    
+    q.setRPY(_euler(0,0), 0, 0);
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "euler1";
+    transformStamped.child_frame_id = "euler2";
+    transformStamped.transform.translation.x = 0;
+    transformStamped.transform.translation.y = 0;
+    transformStamped.transform.translation.z = 0;
+    
+    q.setRPY(0, _euler(1,0), 0);
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "euler2";
+    transformStamped.child_frame_id = "euler3";
+    transformStamped.transform.translation.x = 0;
+    transformStamped.transform.translation.y = 0;
+    transformStamped.transform.translation.z = 0;
+    
+    q.setRPY(0, 0, _euler(2,0));
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
     
     // Joint 0
     transformStamped.header.stamp = ros::Time::now();

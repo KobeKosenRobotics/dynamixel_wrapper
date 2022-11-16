@@ -51,7 +51,8 @@ int main(int argc, char **argv)
         // arm.setAngle(rotation);
         arm.setAngularVelocity(rotation);
         arm.tf_broadcaster();
-        arm.printSimulationRotationVariable();
+        arm.getPose();
+        arm.print();
 
         ros::spinOnce();
         loop_rate.sleep();
