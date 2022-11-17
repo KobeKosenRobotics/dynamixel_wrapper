@@ -29,42 +29,60 @@ class Arm
     private:
         const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI;
 
+        // Motor
         dynamixel_wrapper::dynamixel_wrapper_base _dxl_base;
-
         Eigen::Matrix<double, 6, 1> _sensor_angle, _sensor_angular_velocity;
         Eigen::Matrix<double, 6, 1> _motor_angle, _motor_angular_velocity;
 
+        // Forward Kinematics
         Eigen::Matrix<double, 3, 3> _rotation_all;
         Eigen::Matrix<double, 3, 1> _position, _euler;
-        Eigen::Matrix<double, 6, 6> _jacobi;
-        Eigen::Matrix<double, 6, 1> _pose, _target_pose;
+        Eigen::Matrix<double, 6, 1> _pose;
+
+        // Inverse Kinematics
+        double d, l1, l2, l3, l4, l5, l6, c1, c2, c3, c4, c5, c6, c23, s1, s2, s3, s4, s5, s6, s23;
+        double _proportional_gain = 0.01;
+        Eigen::Matrix<double, 6, 1> _target_pose, _pose_offset, _velocity, _anguler_velocity;
+        Eigen::Matrix<double, 6, 6> _jacobian, _jacobian_inverse;
+        Eigen::Matrix<double, 3, 6> _translation_jacobian, _rotation_jacobian;
+        Eigen::Matrix<double, 3, 3> _alternating_euler;
+        Eigen::Matrix<double, 3, 6> _alternating_rotation;
 
     public:
+        // Initialize
         Arm();
         void initialize();
         Joint joint_offset, joint0, joint1, joint2, joint3, joint4, joint5;
         
+        // Debag
         void print();
 
+        // Motor
         Eigen::Matrix<double, 6, 1> getAngle();
         Eigen::Matrix<double, 6, 1> getAngularVelocity();
         void setAngle(Eigen::Matrix<double, 6, 1> angle_rad);
         void setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps);
 
-        void getPosition();
-        void getEulerAngle();
-        void getPose();
+        // Forward Kinematics
+        Eigen::Matrix<double, 3, 1> getPosition();
+        Eigen::Matrix<double, 3, 1> getEulerAngle();
+        Eigen::Matrix<double, 6, 1> getPose();
 
+        // Inverse Kinematics
+        void setTargetPose(Eigen::Matrix<double, 6, 1> target_pose);
+        void setTargetPose(geometry_msgs::Pose target_pose);
         Eigen::Matrix<double, 6, 1> inverseKinematics();
         Eigen::Matrix<double, 6, 6> getJacobian();
         Eigen::Matrix<double, 3, 6> getTranslationJacobian();
         Eigen::Matrix<double, 3, 6> getRotationJacobian();
+        void replaceVariables();
 
         // Simulation
         void simulationUpdate();
         void tf_broadcaster();
 };
 
+// Initialize
 Arm::Arm()
 {
     initialize();
@@ -84,8 +102,10 @@ void Arm::initialize()
           joint3.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0,  0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  1);
           joint4.initialize(  0.0, 0.0, 123.0, 'y',                  -atan(-30.0/258.0),  0.0, 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
           joint5.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0,  0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  1);
+    _pose_offset << joint0.getLink('x'), joint0.getLink('y'), joint0.getLink('z'), 0.0, 0.0, 0.0;
 }
 
+// Debag
 void Arm::print()
 {
     std::cout
@@ -94,6 +114,7 @@ void Arm::print()
     << std::endl;
 }
 
+// Motor
 Eigen::Matrix<double, 6, 1> Arm::getAngle()
 {
     _sensor_angle(0,0) = joint0.getPresentPosition();
@@ -138,12 +159,14 @@ void Arm::setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps)
     joint5.setGOalVelocity(_motor_angular_velocity(5,0));
 }
 
-void Arm::getPosition()
+// Forward Kinematics
+Eigen::Matrix<double, 3, 1> Arm::getPosition()
 {
     _position = joint_offset.getRotationMatrix()*(joint_offset.getLink()+joint0.getRotationMatrix()*(joint0.getLink()+joint1.getRotationMatrix()*(joint1.getLink()+joint2.getRotationMatrix()*(joint2.getLink()+joint3.getRotationMatrix()*(joint3.getLink()+joint4.getRotationMatrix()*(joint4.getLink()+joint5.getRotationMatrix()*(joint5.getLink())))))));
+    return _position;
 }
 
-void Arm::getEulerAngle()
+Eigen::Matrix<double, 3, 1> Arm::getEulerAngle()
 {
     _rotation_all = joint0.getRotationMatrix()*joint1.getRotationMatrix()*joint2.getRotationMatrix()*joint3.getRotationMatrix()*joint4.getRotationMatrix()*joint5.getRotationMatrix();
     _euler(1,0) = asin(_rotation_all(0,2));
@@ -151,25 +174,10 @@ void Arm::getEulerAngle()
     if(-_rotation_all(1,2)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
     _euler(2,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
     if(-_rotation_all(0,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
-
-    // Eigen::Matrix<double, 3, 3> rx, ry, rz, re;
-    // rx << 1.0,              0.0,               0.0, 
-    //       0.0, cos(_euler(0,0)), -sin(_euler(0,0)),
-    //       0.0, sin(_euler(0,0)),  cos(_euler(0,0));
-    
-    // ry <<  cos(_euler(1,0)), 0.0, sin(_euler(1,0)),
-    //                     0.0, 1.0,              0.0,
-    //       -sin(_euler(1,0)), 0.0, cos(_euler(1,0));
-    
-    // rz << cos(_euler(2,0)), -sin(_euler(2,0)), 0.0,
-    //       sin(_euler(2,0)),  cos(_euler(2,0)), 0.0,
-    //                    0.0,               0.0, 1.0;
-    
-    // re = rx*ry*rz;
-    // std::cout << _rotation_all-re << std::endl << std::endl;
+    return _euler;
 }
 
-void Arm::getPose()
+Eigen::Matrix<double, 6, 1> Arm::getPose()
 {
     getAngle();
     getPosition();
@@ -180,8 +188,122 @@ void Arm::getPose()
     _pose(3,0) = _euler(0,0);
     _pose(4,0) = _euler(1,0);
     _pose(5,0) = _euler(2,0);
+    return _pose;
 }
 
+// Inverse Kinematics
+void Arm::setTargetPose(Eigen::Matrix<double, 6, 1> target_pose)
+{
+    _target_pose = target_pose;
+}
+
+void Arm::setTargetPose(geometry_msgs::Pose target_pose)
+{
+    _target_pose(0,0) = target_pose.position.x;
+    _target_pose(1,0) = target_pose.position.y;
+    _target_pose(2,0) = target_pose.position.z;
+    _target_pose(3,0) = target_pose.orientation.x;
+    _target_pose(4,0) = target_pose.orientation.y;
+    _target_pose(5,0) = target_pose.orientation.z;
+}
+
+Eigen::Matrix<double, 6, 1> Arm::inverseKinematics()
+{
+    _jacobian = getJacobian();
+    _jacobian_inverse = _jacobian.inverse();
+    _anguler_velocity = _jacobian_inverse*(_target_pose-_pose);
+    return _anguler_velocity;
+}
+
+Eigen::Matrix<double, 6, 6> Arm::getJacobian()
+{
+    replaceVariables();
+    
+    _translation_jacobian = getTranslationJacobian();
+    _rotation_jacobian = getRotationJacobian();
+
+    _jacobian <<
+    _translation_jacobian(0,0), _translation_jacobian(0,1), _translation_jacobian(0,2), _translation_jacobian(0,3), _translation_jacobian(0,4), _translation_jacobian(0,5),
+    _translation_jacobian(1,0), _translation_jacobian(1,1), _translation_jacobian(1,2), _translation_jacobian(1,3), _translation_jacobian(1,4), _translation_jacobian(1,5),
+    _translation_jacobian(2,0), _translation_jacobian(2,1), _translation_jacobian(2,2), _translation_jacobian(2,3), _translation_jacobian(2,4), _translation_jacobian(2,5),
+    _rotation_jacobian(0,0)   , _rotation_jacobian(0,1)   , _rotation_jacobian(0,2)   , _rotation_jacobian(0,3)   , _rotation_jacobian(0,4)   , _rotation_jacobian(0,5)   ,
+    _rotation_jacobian(1,0)   , _rotation_jacobian(1,1)   , _rotation_jacobian(1,2)   , _rotation_jacobian(1,3)   , _rotation_jacobian(1,4)   , _rotation_jacobian(1,5)   ,
+    _rotation_jacobian(2,0)   , _rotation_jacobian(2,1)   , _rotation_jacobian(2,2)   , _rotation_jacobian(2,3)   , _rotation_jacobian(2,4)   , _rotation_jacobian(2,5)   ;
+
+    return _jacobian;
+}
+
+Eigen::Matrix<double, 3, 6> Arm::getTranslationJacobian()
+{
+    _translation_jacobian(0,0) = -d*s1*c2 -l2*s1*s2 +d*s1*c23 -l3*s1*s23 -l5*s1*c23*c4*s5 -l5*c1*s4*s5 -l5*s1*s23*c5;
+    _translation_jacobian(0,1) = -d*c1*s2 +l2*c1*c2 +d*c1*s23 +l3*c1*c23 -l5*c1*s23*c4*s5 +l5*c1*c23*c5;
+    _translation_jacobian(0,2) = d*c1*s23 +l3*c1*c23 -l5*c1*s23*c4*s5 +l5*c1*c23*c5;
+    _translation_jacobian(0,3) = -l5*c1*c23*s4*s5 -l5*s1*c4*s5;
+    _translation_jacobian(0,4) = l5*c1*c23*c4*s5 -l5*s1*s4*c5 -l5*c1*s23*s5;
+    _translation_jacobian(0,5) = 0.0;
+    // kokomade check zumi
+
+    _translation_jacobian(1,0) = d*c1*c2 +l2*c1*s2 -d*c1*c23 +l3*c1*s23 +l5*c1*c23*c4*s5 -l5*s1*s4*s5 +l5*c1*s23*c5;
+    _translation_jacobian(1,1) = -d*s1*s2 +l2*s1*c2 +d*s1*s23 +l3*s1*c23 -l5*s1*s23*c4*s5 +l5*s1*c23*c5;
+    _translation_jacobian(1,2) = d*s1*s23 +l3*s1*c23 -l5*s1*s23*c4*s5 +l5*s1*c23*c5;
+    _translation_jacobian(1,3) = -l5*s1*c23*s4*s5 +l5*c1*c4*s5;
+    _translation_jacobian(1,4) = l5*s1*c23*c4*c5 +l5*c1*s4*c5 -l5*s1*s23*s5;
+    _translation_jacobian(1,5) = 0.0;
+
+    _translation_jacobian(2,0) = 0.0;
+    _translation_jacobian(2,1) = -d*c2 -l2*s2 +d*c23 -l3*s23 -l5*c23*c4*s5 -l5*s23*c5;
+    _translation_jacobian(2,2) = d*c23 -l3*s23 -l5*c23*c4*s5 -l5*s23*c5;
+    _translation_jacobian(2,3) = l5*s23*s4*s5;
+    _translation_jacobian(2,4) = -l5*s23*c4*c5 -l5*c23*s5;
+    _translation_jacobian(2,5) = 0.0;
+
+    return _translation_jacobian;
+}
+
+Eigen::Matrix<double, 3, 6> Arm::getRotationJacobian()
+{
+    _alternating_euler <<
+    1.0,               0.0,                 -sin(_euler(1,0)),
+    0.0,  cos(_euler(0,0)), sin(_euler(0,0))*cos(_euler(1,0)),
+    0.0, -sin(_euler(0,0)), cos(_euler(0,0))*cos(_euler(1,0));
+
+    _alternating_rotation <<
+    1.0, 0.0, 0.0,    c23,            s23*s4,                  c23*c5 -s23*c4*s5,
+    0.0,  c1,  c1, s1*s23,  c1*c4 -s1*c23*s4,  c1*s4*s5 +s1*s23*c5 +s1*c23*c4*s5,
+    0.0, -s1, -s1, c1*s23, -s1*c4 -c1*c23*s4, -s1*s4*s5 +c1*s23*c5 +c1*c23*c4*s5;
+
+    _rotation_jacobian = _alternating_euler.inverse()*_alternating_rotation;
+    return _rotation_jacobian;
+}
+
+void Arm::replaceVariables()
+{
+    d  = sqrt(pow(joint_offset.getLink('x'),2)+pow(joint_offset.getLink('y'),2)+pow(joint_offset.getLink('z'),2));
+    l1 = sqrt(pow(joint0.getLink('x'),2)+pow(joint0.getLink('y'),2)+pow(joint0.getLink('z'),2));
+    l1 = sqrt(pow(joint1.getLink('x'),2)+pow(joint1.getLink('y'),2)+pow(joint1.getLink('z'),2));
+    l1 = sqrt(pow(joint2.getLink('x'),2)+pow(joint2.getLink('y'),2)+pow(joint2.getLink('z'),2));
+    l1 = sqrt(pow(joint3.getLink('x'),2)+pow(joint3.getLink('y'),2)+pow(joint3.getLink('z'),2));
+    l1 = sqrt(pow(joint4.getLink('x'),2)+pow(joint4.getLink('y'),2)+pow(joint4.getLink('z'),2));
+    l1 = sqrt(pow(joint5.getLink('x'),2)+pow(joint5.getLink('y'),2)+pow(joint5.getLink('z'),2));
+
+    c1 = cos(joint0.getGlobalAngle());
+    c2 = cos(joint1.getGlobalAngle());
+    c3 = cos(joint2.getGlobalAngle());
+    c4 = cos(joint3.getGlobalAngle());
+    c5 = cos(joint4.getGlobalAngle());
+    c6 = cos(joint5.getGlobalAngle());
+    c23 = cos(joint2.getGlobalAngle()+joint3.getGlobalAngle());
+
+    s1 = sin(joint0.getGlobalAngle());
+    s2 = sin(joint1.getGlobalAngle());
+    s3 = sin(joint2.getGlobalAngle());
+    s4 = sin(joint3.getGlobalAngle());
+    s5 = sin(joint4.getGlobalAngle());
+    s6 = sin(joint5.getGlobalAngle());
+    s23 = sin(joint2.getGlobalAngle()+joint3.getGlobalAngle());
+}
+
+// Simulation
 void Arm::simulationUpdate()
 {
     joint0.simulationUpdate();
@@ -190,6 +312,7 @@ void Arm::simulationUpdate()
     joint3.simulationUpdate();
     joint4.simulationUpdate();
     joint5.simulationUpdate();
+    tf_broadcaster();
 }
 
 void Arm::tf_broadcaster()

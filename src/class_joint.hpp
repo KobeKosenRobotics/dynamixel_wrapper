@@ -28,39 +28,47 @@ class Joint
     private:
         const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
 
+        // Initialize
         char _axis;
         Eigen::Matrix<double, 3, 1> _link;
         dynamixel_wrapper::dynamixel_wrapper _motor;
         int _operating_mode;
         double _homing_offset;
 
+        // Motor
         bool _is_valid, _is_valid_old = true;
         double _sensor_angle, _sensor_angular_velocity;
         double _simulation_angle, _simulation_angular_velocity, _total_simulation_angular_velocity;
         double _global_theta;
         double _motor_angle, _motor_angular_velocity;
 
+        // Rotation Matrix
         Eigen::Matrix<double, 3, 3> _rotation_matrix;
 
+        // Simulation
         bool _is_first_simulation = true;
         ros::Time _start_time_simulation, _end_time_simulation;
     public:
+        // Initialize
         Joint();
         void initialize(double link_x, double link_y, double link_z, char axis);
         void initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, double adjust_deg, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode);
-        
+
         void setHomingOffset(double homing_offset, double adjust_deg);
         void setTorqueEnable(bool state);
-        void setLED(int red, int green, int blue);
 
+        // Motor
+        void setLED(int red, int green, int blue);
         double getPresentPosition();
         double getPresentVelocity();
         void setGoalPosition(double motor_angle_rad);
         void setGOalVelocity(double motor_angular_velocity_radps);
 
+        // Rotation Matrix
         double getGlobalAngle();
         Eigen::Matrix<double, 3, 3> getRotationMatrix();
         Eigen::Matrix<double, 3, 1> getLink();
+        double getLink(char axis);
 
         // Simulation
         void simulationUpdate();
@@ -68,6 +76,8 @@ class Joint
         double simulationAngle(char axis);
 };
 
+
+// Initialize
 Joint::Joint(){}
 
 void Joint::initialize(double link_x, double link_y, double link_z, char axis)
@@ -104,6 +114,7 @@ void Joint::setHomingOffset(double homing_offset, double adjust_deg)
     #endif
 }
 
+// Motor
 void Joint::setLED(int red, int green, int blue)
 {
     #ifndef SIMULATION
@@ -181,6 +192,7 @@ void Joint::setGOalVelocity(double motor_angular_velocity_radps)
     }
 }
 
+// Rotation Matrix
 double Joint::getGlobalAngle()
 {
     return _sensor_angle-_homing_offset;
@@ -220,6 +232,16 @@ Eigen::Matrix<double, 3, 1> Joint::getLink()
     return _link;
 }
 
+double Joint::getLink(char axis)
+{
+    if(axis == 'x') return _link(0,0);
+    else if(axis == 'y') return _link(1,0);
+    else if(axis == 'z') return _link(2,0);
+
+    std::cout << "error: axis must be x, y or z" << std::endl;
+    return 0.0;
+}
+
 // Simulation
 void Joint::simulationUpdate()
 {
@@ -238,12 +260,7 @@ void Joint::simulationUpdate()
 
 double Joint::simulationLink(char axis)
 {
-    if(axis == 'x') return _link(0,0)/1000.0;
-    else if(axis == 'y') return _link(1,0)/1000.0;
-    else if(axis == 'z') return _link(2,0)/1000.0;
-
-    std::cout << "error: axis must be x, y or z" << std::endl;
-    return 0.0;
+    return getLink(axis)/1000.0;
 }
 
 double Joint::simulationAngle(char axis)
