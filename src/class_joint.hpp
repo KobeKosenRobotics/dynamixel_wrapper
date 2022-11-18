@@ -111,7 +111,7 @@ void Joint::setHomingOffset(double homing_offset, double adjust_deg)
     setTorqueEnable(false);
     _homing_offset = homing_offset;
     #ifndef SIMULATION
-    _motor.setHomingOffset(_homing_offset*rad2deg+adjust_deg);
+    _motor.setHomingOffset(-_homing_offset*rad2deg-adjust_deg);
     #endif
 }
 
@@ -208,7 +208,7 @@ void Joint::setGOalVelocity(double motor_angular_velocity_radps)
 // Rotation Matrix
 double Joint::getGlobalAngle()
 {
-    return _sensor_angle-_homing_offset;
+    return _sensor_angle+_homing_offset;
 }
 
 Eigen::Matrix<double, 3, 3> Joint::getRotationMatrix()
