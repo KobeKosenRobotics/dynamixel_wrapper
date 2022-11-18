@@ -28,10 +28,11 @@
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI;
 
 Arm arm;
+Eigen::Matrix<double, 6, 1> joint_rotation;
 
 void joint_rotation_cb(geometry_msgs::Pose::ConstPtr msg)
 {
-    // rotation << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
+    // joint_rotation << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
     arm.setTargetPose(*msg);
 }
 
@@ -39,7 +40,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "Arm");
     ros::NodeHandle nh;
-    double rate = 10000.0;
+    double rate = 100.0;
     ros::Rate loop_rate(rate);
 
     // Subscriber
@@ -50,6 +51,9 @@ int main(int argc, char **argv)
         arm.simulationUpdate();
         arm.getPose();
         arm.setAngularVelocity(arm.inverseKinematics());
+        // arm.setAngularVelocity(joint_rotation);
+
+        arm.print();
         
         ros::spinOnce();
         loop_rate.sleep();

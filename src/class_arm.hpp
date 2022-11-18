@@ -42,7 +42,10 @@ class Arm
         // Inverse Kinematics
         double d, l1, l2, l3, l4, l5, l6, c1, c2, c3, c4, c5, c6, c23, s1, s2, s3, s4, s5, s6, s23;
         double _proportional_gain = 0.01;
-        Eigen::Matrix<double, 6, 1> _target_pose, _pose_offset, _velocity, _anguler_velocity;
+        bool _is_first_linear_polation = true;
+        double _midpoint, _duration_time, _liniar_velocity = 50;    // _liner_velocity[mm/s]
+        ros::Time _start_time_move;
+        Eigen::Matrix<double, 6, 1> _target_pose, _target_pose_old, _target_pose_mid, _target_pose_start, _pose_offset, _anguler_velocity;
         Eigen::Matrix<double, 6, 6> _jacobian, _jacobian_inverse;
         Eigen::Matrix<double, 3, 6> _translation_jacobian, _rotation_jacobian;
         Eigen::Matrix<double, 3, 3> _alternating_euler;
@@ -71,6 +74,9 @@ class Arm
         // Inverse Kinematics
         void setTargetPose(Eigen::Matrix<double, 6, 1> target_pose);
         void setTargetPose(geometry_msgs::Pose target_pose);
+        Eigen::Matrix<double, 6, 1> linearInterpolation();
+        void setStartPose();
+        double getDistance();
         Eigen::Matrix<double, 6, 1> inverseKinematics();
         Eigen::Matrix<double, 6, 6> getJacobian();
         Eigen::Matrix<double, 3, 6> getTranslationJacobian();
@@ -109,7 +115,7 @@ void Arm::initialize()
 void Arm::print()
 {
     std::cout
-    << _pose
+    << _target_pose_mid
     << std::endl
     << std::endl;
 }
@@ -174,6 +180,11 @@ Eigen::Matrix<double, 3, 1> Arm::getEulerAngle()
     if(-_rotation_all(1,2)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
     _euler(2,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
     if(-_rotation_all(0,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
+    // _euler(1,0) = -asin(_rotation_all(2,0));
+    // _euler(0,0) = acos(_rotation_all(2,2)/cos(_euler(1,0)));
+    // if(_rotation_all(2,1)/cos(_euler(1,0))) _euler(0,0) *= (-1);
+    // _euler(2,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
+    // if(_rotation_all(1,0)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
     return _euler;
 }
 
@@ -195,6 +206,7 @@ Eigen::Matrix<double, 6, 1> Arm::getPose()
 void Arm::setTargetPose(Eigen::Matrix<double, 6, 1> target_pose)
 {
     _target_pose = target_pose;
+    setStartPose();
 }
 
 void Arm::setTargetPose(geometry_msgs::Pose target_pose)
@@ -205,13 +217,37 @@ void Arm::setTargetPose(geometry_msgs::Pose target_pose)
     _target_pose(3,0) = target_pose.orientation.x;
     _target_pose(4,0) = target_pose.orientation.y;
     _target_pose(5,0) = target_pose.orientation.z;
+    setStartPose();
+}
+
+Eigen::Matrix<double, 6, 1> Arm::linearInterpolation()
+{
+    _midpoint = std::min(std::max((ros::Time::now()-_start_time_move).toSec()/_duration_time, 0.0), 1.0);
+    _target_pose_mid = _midpoint*_target_pose +(1-_midpoint)*_target_pose_start;
+    return _target_pose_mid;
+}
+
+void Arm::setStartPose()
+{
+    if(_target_pose != _target_pose_old)
+    {
+        _target_pose_start = _pose;
+        _start_time_move = ros::Time::now();
+        _duration_time = getDistance()/_liniar_velocity;
+    }
+    _target_pose_old = _target_pose;   
+}
+
+double Arm::getDistance()
+{
+    return sqrt(pow((_target_pose(0,0)-_target_pose_start(0,0)),2)+pow((_target_pose(1,0)-_target_pose_start(1,0)),2)+pow((_target_pose(2,0)-_target_pose_start(2,0)),2));
 }
 
 Eigen::Matrix<double, 6, 1> Arm::inverseKinematics()
 {
     _jacobian = getJacobian();
     _jacobian_inverse = _jacobian.inverse();
-    _anguler_velocity = _jacobian_inverse*(_target_pose-_pose);
+    _anguler_velocity = _jacobian_inverse*(linearInterpolation()-_pose);
     return _anguler_velocity;
 }
 
@@ -329,7 +365,7 @@ void Arm::tf_broadcaster()
     transformStamped.transform.translation.y = _position(1,0)/1000.0;
     transformStamped.transform.translation.z = _position(2,0)/1000.0;
     
-    q.setRPY(_euler(2,0), _euler(1,0), _euler(1,0));
+    q.setRPY(_euler(0,0), _euler(1,0), _euler(2,0));
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
