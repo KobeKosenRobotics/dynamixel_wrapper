@@ -38,9 +38,10 @@ class Joint
         // Motor
         bool _is_valid, _is_valid_old = true;
         double _sensor_angle, _sensor_angular_velocity;
-        double _simulation_angle, _simulation_angular_velocity, _total_simulation_angular_velocity;
+        double _simulation_angle, _simulation_angular_velocity;
         double _global_theta;
         double _motor_angle, _motor_angular_velocity;
+        double _proportional_gain = 2.0;
 
         // Rotation Matrix
         Eigen::Matrix<double, 3, 3> _rotation_matrix;
@@ -159,12 +160,24 @@ void Joint::setGoalPosition(double motor_angle_rad)
     else
     {
         _motor_angle = motor_angle_rad;
-        #ifndef SIMULATION
-        _motor.setGoalPosition(_motor_angle*rad2deg);
-        #endif
-        #ifdef SIMULATION
-        _simulation_angle = _motor_angle;
-        #endif
+
+        if(_operating_mode == 1)
+        {
+            #ifndef SIMULATION
+            _motor.setGoalVelocity(_proportional_gain*(_motor_angle-_sensor_angle));
+            #endif
+            _simulation_angular_velocity = _proportional_gain*(_motor_angle-_sensor_angle);
+        }
+        if(_operating_mode == 4)
+        {
+            
+            #ifndef SIMULATION
+            _motor.setGoalPosition(_motor_angle*rad2deg);
+            #endif
+            #ifdef SIMULATION
+            _simulation_angle = _motor_angle;
+            #endif
+        }
     }
 }
 

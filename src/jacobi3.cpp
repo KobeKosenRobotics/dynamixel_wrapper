@@ -29,11 +29,13 @@ const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI;
 
 Arm arm;
 Eigen::Matrix<double, 6, 1> joint_rotation;
+int operating_mode;
 
 void joint_rotation_cb(geometry_msgs::Pose::ConstPtr msg)
 {
-    // joint_rotation << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
-    arm.setTargetPose(*msg);
+    operating_mode = msg->orientation.w;
+    if(operating_mode > 0.5) arm.setTargetPose(*msg);
+    else joint_rotation << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
 }
 
 int main(int argc, char **argv)
@@ -50,11 +52,16 @@ int main(int argc, char **argv)
     {
         arm.simulationUpdate();
         arm.getPose();
-        arm.setAngularVelocity(arm.inverseKinematics());
-        // arm.setAngularVelocity(joint_rotation);
 
-        arm.print();
+        if(operating_mode > 0.5) arm.setAngularVelocity(arm.inverseKinematics());
+        else
+        {
+            arm.setAngle(joint_rotation);
+            
+        }
         
+        arm.print();
+
         ros::spinOnce();
         loop_rate.sleep();
     }
