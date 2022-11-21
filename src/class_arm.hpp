@@ -42,7 +42,7 @@ class Arm
 
         // Inverse Kinematics
         double d, l1, l2, l3, l4, l5, l6, c1, c2, c3, c4, c5, c6, c23, s1, s2, s3, s4, s5, s6, s23;
-        double _proportional_gain = 0.01;
+        double _proportional_gain = 10.0;
         bool _is_first_linear_polation = true;
         double _midpoint, _duration_time, _liniar_velocity = 50;    // _liner_velocity[mm/s]
         ros::Time _start_time_move;
@@ -278,7 +278,6 @@ Eigen::Matrix<double, 3, 6> Arm::getTranslationJacobian()
     _translation_jacobian(0,3) = -l5*c1*c23*s4*s5 -l5*s1*c4*s5;
     _translation_jacobian(0,4) = l5*c1*c23*c4*s5 -l5*s1*s4*c5 -l5*c1*s23*s5;
     _translation_jacobian(0,5) = 0.0;
-    // kokomade check zumi
 
     _translation_jacobian(1,0) = d*c1*c2 +l2*c1*s2 -d*c1*c23 +l3*c1*s23 +l5*c1*c23*c4*s5 -l5*s1*s4*s5 +l5*c1*s23*c5;
     _translation_jacobian(1,1) = -d*s1*s2 +l2*s1*c2 +d*s1*s23 +l3*s1*c23 -l5*s1*s23*c4*s5 +l5*s1*c23*c5;
@@ -300,9 +299,12 @@ Eigen::Matrix<double, 3, 6> Arm::getTranslationJacobian()
 Eigen::Matrix<double, 3, 6> Arm::getRotationJacobian()
 {
     _alternating_euler <<
-    1.0,               0.0,                 -sin(_euler(1,0)),
+    // 1.0,               0.0,                 -sin(_euler(1,0)),
+    // 0.0,  cos(_euler(0,0)), sin(_euler(0,0))*cos(_euler(1,0)),
+    // 0.0, -sin(_euler(0,0)), cos(_euler(0,0))*cos(_euler(1,0));
+    0.0, -sin(_euler(0,0)), cos(_euler(0,0))*cos(_euler(1,0)),
     0.0,  cos(_euler(0,0)), sin(_euler(0,0))*cos(_euler(1,0)),
-    0.0, -sin(_euler(0,0)), cos(_euler(0,0))*cos(_euler(1,0));
+    1.0,               0.0,                 -sin(_euler(1,0));
 
     _alternating_rotation <<
     1.0, 0.0, 0.0,    c23,            s23*s4,                  c23*c5 -s23*c4*s5,
@@ -317,11 +319,11 @@ void Arm::replaceVariables()
 {
     d  = sqrt(pow(joint_offset.getLink('x'),2)+pow(joint_offset.getLink('y'),2)+pow(joint_offset.getLink('z'),2));
     l1 = sqrt(pow(joint0.getLink('x'),2)+pow(joint0.getLink('y'),2)+pow(joint0.getLink('z'),2));
-    l1 = sqrt(pow(joint1.getLink('x'),2)+pow(joint1.getLink('y'),2)+pow(joint1.getLink('z'),2));
-    l1 = sqrt(pow(joint2.getLink('x'),2)+pow(joint2.getLink('y'),2)+pow(joint2.getLink('z'),2));
-    l1 = sqrt(pow(joint3.getLink('x'),2)+pow(joint3.getLink('y'),2)+pow(joint3.getLink('z'),2));
-    l1 = sqrt(pow(joint4.getLink('x'),2)+pow(joint4.getLink('y'),2)+pow(joint4.getLink('z'),2));
-    l1 = sqrt(pow(joint5.getLink('x'),2)+pow(joint5.getLink('y'),2)+pow(joint5.getLink('z'),2));
+    l2 = sqrt(pow(joint1.getLink('x'),2)+pow(joint1.getLink('y'),2)+pow(joint1.getLink('z'),2));
+    l3 = sqrt(pow(joint2.getLink('x'),2)+pow(joint2.getLink('y'),2)+pow(joint2.getLink('z'),2));
+    l4 = sqrt(pow(joint3.getLink('x'),2)+pow(joint3.getLink('y'),2)+pow(joint3.getLink('z'),2));
+    l5 = sqrt(pow(joint4.getLink('x'),2)+pow(joint4.getLink('y'),2)+pow(joint4.getLink('z'),2));
+    l6 = sqrt(pow(joint5.getLink('x'),2)+pow(joint5.getLink('y'),2)+pow(joint5.getLink('z'),2));
 
     c1 = cos(joint0.getGlobalAngle());
     c2 = cos(joint1.getGlobalAngle());
