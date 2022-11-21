@@ -176,16 +176,16 @@ Eigen::Matrix<double, 3, 1> Arm::getPosition()
 Eigen::Matrix<double, 3, 1> Arm::getEulerAngle()
 {
     _rotation_all = joint0.getRotationMatrix()*joint1.getRotationMatrix()*joint2.getRotationMatrix()*joint3.getRotationMatrix()*joint4.getRotationMatrix()*joint5.getRotationMatrix();
-    _euler(1,0) = asin(_rotation_all(0,2));
-    _euler(0,0) = acos(_rotation_all(2,2)/cos(_euler(1,0)));
-    if(-_rotation_all(1,2)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
-    _euler(2,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
-    if(-_rotation_all(0,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
-    // _euler(1,0) = -asin(_rotation_all(2,0));
+    // _euler(1,0) = asin(_rotation_all(0,2));
     // _euler(0,0) = acos(_rotation_all(2,2)/cos(_euler(1,0)));
-    // if(_rotation_all(2,1)/cos(_euler(1,0))) _euler(0,0) *= (-1);
+    // if(-_rotation_all(1,2)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
     // _euler(2,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
-    // if(_rotation_all(1,0)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
+    // if(-_rotation_all(0,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
+    _euler(1,0) = -asin(_rotation_all(2,0));
+    _euler(0,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
+    if(_rotation_all(1,0)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
+    _euler(2,0) = acos(_rotation_all(2,2)/cos(_euler(1,0)));
+    if(_rotation_all(2,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
     return _euler;
 }
 
@@ -366,7 +366,7 @@ void Arm::tf_broadcaster()
     transformStamped.transform.translation.y = _position(1,0)/1000.0;
     transformStamped.transform.translation.z = _position(2,0)/1000.0;
     
-    q.setRPY(_euler(0,0), _euler(1,0), _euler(2,0));
+    q.setRPY(_euler(2,0), _euler(1,0), _euler(0,0));
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
