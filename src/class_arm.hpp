@@ -42,7 +42,7 @@ class Arm
 
         // Inverse Kinematics
         double d, l1, l2, l3, l4, l5, l6, c1, c2, c3, c4, c5, c6, c23, s1, s2, s3, s4, s5, s6, s23;
-        double _proportional_gain = 10.0;
+        double _proportional_gain = 0.01;
         bool _is_first_linear_polation = true;
         double _midpoint, _duration_time, _liniar_velocity = 50;    // _liner_velocity[mm/s]
         ros::Time _start_time_move;
@@ -116,7 +116,24 @@ void Arm::initialize()
 void Arm::print()
 {
     std::cout
+    << "pose"
+    << std::endl
     << _pose
+    << std::endl
+    << std::endl
+    << "jacobian determinant"
+    << std::endl
+    << _jacobian.determinant()
+    << std::endl
+    << std::endl
+    << "alternating euler determinant"
+    << std::endl
+    << _alternating_euler.determinant()
+    << std::endl
+    << std::endl
+    << "angular velocity"
+    << std::endl
+    << inverseKinematics()
     << std::endl
     << std::endl;
 }
@@ -248,7 +265,7 @@ Eigen::Matrix<double, 6, 1> Arm::inverseKinematics()
 {
     _jacobian = getJacobian();
     _jacobian_inverse = _jacobian.inverse();
-    _anguler_velocity = _jacobian_inverse*(linearInterpolation()-_pose);
+    _anguler_velocity = _proportional_gain*_jacobian_inverse*(linearInterpolation()-_pose);
     return _anguler_velocity;
 }
 
