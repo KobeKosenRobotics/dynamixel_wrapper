@@ -41,7 +41,7 @@ class Arm
         Eigen::Matrix<double, 6, 1> _pose;
 
         // Inverse Kinematics
-        double d, l1, l2, l3, l4, l5, l6, c1, c2, c3, c4, c5, c6, c23, s1, s2, s3, s4, s5, s6, s23;
+        double d, l1, l2, l3, l4, l5, l6, t1, t2, t3, t4, t5, t6, c1, c2, c3, c4, c5, c6, c23, s1, s2, s3, s4, s5, s6, s23;
         double _proportional_gain = 1.0;
         bool _is_first_linear_polation = true;
         double _midpoint, _duration_time, _liniar_velocity = 50;    // _liner_velocity[mm/s]
@@ -116,10 +116,10 @@ void Arm::initialize()
 void Arm::print()
 {
     std::cout
-    // << "pose"
-    // << std::endl
-    // << _pose
-    // << std::endl
+    << "pose"
+    << std::endl
+    << _pose
+    << std::endl
     // << std::endl
     // << "jacobian determinant"
     // << std::endl
@@ -141,10 +141,10 @@ void Arm::print()
     // << linearInterpolation()-_pose
     // << std::endl
     // << std::endl
-    << "eye"
-    << std::endl
-    << _alternating_euler.inverse()*_alternating_euler
-    << std::endl
+    // << "eye"
+    // << std::endl
+    // << _alternating_euler.inverse()*_alternating_euler
+    // << std::endl
     << std::endl;
 }
 
@@ -255,7 +255,8 @@ void Arm::setTargetPose(geometry_msgs::Pose target_pose)
 Eigen::Matrix<double, 6, 1> Arm::linearInterpolation()
 {
     _midpoint = std::min(std::max((ros::Time::now()-_start_time_move).toSec()/_duration_time, 0.0), 1.0);
-    _target_pose_mid = _midpoint*_target_pose +(1-_midpoint)*_target_pose_start;
+    // _target_pose_mid = _midpoint*_target_pose +(1-_midpoint)*_target_pose_start;
+    _target_pose_mid = _target_pose;
     return _target_pose_mid;
 }
 
@@ -335,9 +336,9 @@ Eigen::Matrix<double, 3, 6> Arm::getRotationJacobian()
     1.0,               0.0,                 -sin(_euler(1,0));
 
     _alternating_rotation <<
-    1.0, 0.0, 0.0,    c23,            s23*s4,                  c23*c5 -s23*c4*s5,
-    0.0,  c1,  c1, s1*s23,  c1*c4 -s1*c23*s4,  c1*s4*s5 +s1*s23*c5 +s1*c23*c4*s5,
-    0.0, -s1, -s1, c1*s23, -s1*c4 -c1*c23*s4, -s1*s4*s5 +c1*s23*c5 +c1*c23*c4*s5;
+    0.0, -sin(t1), -sin(t1), sin(t2 + t3)*cos(t1), cos(t1)*sin(t2)*sin(t3)*sin(t4) - cos(t1)*cos(t2)*cos(t3)*sin(t4) - cos(t4)*sin(t1), cos(t1)*cos(t2)*cos(t5)*sin(t3) - sin(t1)*sin(t4)*sin(t5) + cos(t1)*cos(t3)*cos(t5)*sin(t2) + cos(t1)*cos(t2)*cos(t3)*cos(t4)*sin(t5) - cos(t1)*cos(t4)*sin(t2)*sin(t3)*sin(t5),
+    0.0,  cos(t1),  cos(t1), sin(t2 + t3)*sin(t1), cos(t1)*cos(t4) - cos(t2)*cos(t3)*sin(t1)*sin(t4) + sin(t1)*sin(t2)*sin(t3)*sin(t4), cos(t1)*sin(t4)*sin(t5) + cos(t2)*cos(t5)*sin(t1)*sin(t3) + cos(t3)*cos(t5)*sin(t1)*sin(t2) + cos(t2)*cos(t3)*cos(t4)*sin(t1)*sin(t5) - cos(t4)*sin(t1)*sin(t2)*sin(t3)*sin(t5),
+    1.0,      0.0,      0.0,         cos(t2 + t3),                                                                sin(t2 + t3)*sin(t4),                                                           cos(t2)*cos(t3)*cos(t5) - cos(t5)*sin(t2)*sin(t3) - cos(t2)*cos(t4)*sin(t3)*sin(t5) - cos(t3)*cos(t4)*sin(t2)*sin(t5);
 
     _rotation_jacobian = _alternating_euler.inverse()*_alternating_rotation;
     return _rotation_jacobian;
@@ -352,6 +353,13 @@ void Arm::replaceVariables()
     l4 = sqrt(pow(joint3.getLink('x'),2)+pow(joint3.getLink('y'),2)+pow(joint3.getLink('z'),2));
     l5 = sqrt(pow(joint4.getLink('x'),2)+pow(joint4.getLink('y'),2)+pow(joint4.getLink('z'),2));
     l6 = sqrt(pow(joint5.getLink('x'),2)+pow(joint5.getLink('y'),2)+pow(joint5.getLink('z'),2));
+
+    t1 = joint0.getGlobalAngle();
+    t2 = joint1.getGlobalAngle();
+    t3 = joint2.getGlobalAngle();
+    t4 = joint3.getGlobalAngle();
+    t5 = joint4.getGlobalAngle();
+    t6 = joint5.getGlobalAngle();
 
     c1 = cos(joint0.getGlobalAngle());
     c2 = cos(joint1.getGlobalAngle());
