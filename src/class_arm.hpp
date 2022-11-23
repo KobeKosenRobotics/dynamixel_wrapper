@@ -109,13 +109,14 @@ void Arm::initialize()
     int _baudrate = 1000000;
     _dxl_base.initialize(_port_name, _baudrate);
     #endif
+
     joint_offset.initialize(  0.0, 0.0, 159.0, 'o');
-          joint0.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0,   0.0, 1, _dxl_base, dynamixel_wrapper::PH54_200_S500_R, _operating_mode);
-          joint1.initialize( 30.0, 0.0, 264.0, 'y', -atan(30.0/264.0)                  , -36.3, 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  _operating_mode);
-          joint2.initialize(-30.0, 0.0, 258.0, 'y',  atan(30.0/264.0)-atan(-30.0/258.0), -45.0, 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode);
-          joint3.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0,   0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode);
-          joint4.initialize(  0.0, 0.0, 123.0, 'y',                   atan(-30.0/258.0),   0.0, 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode);
-          joint5.initialize(  0.0, 0.0,   0.0, 'z',                                 0.0,   0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode);
+          joint0.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 1, _dxl_base, dynamixel_wrapper::PH54_200_S500_R, _operating_mode);
+          joint1.initialize( 30.0, 0.0, 264.0, 'y', 0.0, -36.3, 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  _operating_mode);
+          joint2.initialize(-30.0, 0.0, 258.0, 'y', 0.0, -45.0, 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode);
+          joint3.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode);
+          joint4.initialize(  0.0, 0.0, 123.0, 'y', 0.0,   0.0, 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode);
+          joint5.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode);
 }
 
 // Debag
@@ -126,31 +127,37 @@ void Arm::print()
     << std::endl
     << _pose
     << std::endl
+
     // << std::endl
     // << "jacobian determinant"
     // << std::endl
     // << _jacobian.determinant()
     // << std::endl
+
     // << std::endl
     // << "alternating euler determinant"
     // << std::endl
     // << _alternating_euler.determinant()
     // << std::endl
+
     // << std::endl
     // << "angular velocity"
     // << std::endl
     // << inverseKinematics()
     // << std::endl
-    // << std::endl
-    // << "error"
-    // << std::endl
-    // << linearInterpolation()-_pose
-    // << std::endl
+
+    << std::endl
+    << "error"
+    << std::endl
+    << linearInterpolation()-_pose
+    << std::endl
+
     // << std::endl
     // << "eye"
     // << std::endl
     // << _alternating_euler.inverse()*_alternating_euler
     // << std::endl
+
     << std::endl;
 }
 
@@ -210,13 +217,6 @@ Eigen::Matrix<double, 3, 1> Arm::getEulerAngle()
 {
     _rotation_all = joint0.getRotationMatrix()*joint1.getRotationMatrix()*joint2.getRotationMatrix()*joint3.getRotationMatrix()*joint4.getRotationMatrix()*joint5.getRotationMatrix();
 
-    // XYZ Euler
-    // _euler(1,0) = asin(_rotation_all(0,2));
-    // _euler(0,0) = acos(_rotation_all(2,2)/cos(_euler(1,0)));
-    // if(-_rotation_all(1,2)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
-    // _euler(2,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
-    // if(-_rotation_all(0,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
-
     // ZYX Euler
     _euler(1,0) = -asin(_rotation_all(2,0));
     _euler(0,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
@@ -252,9 +252,9 @@ void Arm::setTargetPose(geometry_msgs::Pose target_pose)
     _target_pose(0,0) = target_pose.position.x;
     _target_pose(1,0) = target_pose.position.y;
     _target_pose(2,0) = target_pose.position.z;
-    _target_pose(3,0) = target_pose.orientation.x;
+    _target_pose(3,0) = target_pose.orientation.z;
     _target_pose(4,0) = target_pose.orientation.y;
-    _target_pose(5,0) = target_pose.orientation.z;
+    _target_pose(5,0) = target_pose.orientation.x;
     setStartPose();
 }
 
@@ -262,7 +262,6 @@ Eigen::Matrix<double, 6, 1> Arm::linearInterpolation()
 {
     _midpoint = std::min(std::max((ros::Time::now()-_start_time_move).toSec()/_duration_time, 0.0), 1.0);
     _target_pose_mid = _midpoint*_target_pose +(1-_midpoint)*_target_pose_start;
-    // _target_pose_mid = _target_pose;
     return _target_pose_mid;
 }
 
@@ -342,9 +341,9 @@ Eigen::Matrix<double, 3, 6> Arm::getRotationJacobian()
     1.0,               0.0,                 -sin(_euler(1,0));
 
     _alternating_rotation <<
-    0.0, -s0, -s0, s12*c1,c0*s1*s2*s3 -c0*c1*c2*s3 - c3*s0,c0*c1*c4*s2 - s0*s3*s4 +c0*c2*c4*s1 +c0*c1*c2*c3*s4 -c0*c3*s1*s2*s4,
-    0.0, c0, c0, s12*s0,c0*c3 - c1*c2*s0*s3 + s0*s1*s2*s3,c0*s3*s4 + c1*c4*s0*s2 + c2*c4*s0*s1 + c1*c2*c3*s0*s4 - c3*s0*s1*s2*s4,
-    1.0,      0.0,      0.0,         c12,                                                                s12*s3,                                                           c1*c2*c4 - c4*s1*s2 - c1*c3*s2*s4 - c2*c3*s1*s4;
+    0.0, -s0, -s0, s12*c1,  c0*s1*s2*s3 -c0*c1*c2*s3 - c3*s0,    c0*c1*c4*s2 - s0*s3*s4 +c0*c2*c4*s1 +c0*c1*c2*c3*s4 -c0*c3*s1*s2*s4,
+    0.0,  c0,  c0, s12*s0, c0*c3 - c1*c2*s0*s3 + s0*s1*s2*s3, c0*s3*s4 + c1*c4*s0*s2 + c2*c4*s0*s1 + c1*c2*c3*s0*s4 - c3*s0*s1*s2*s4,
+    1.0, 0.0, 0.0,    c12,                            s12*s3,                        c1*c2*c4 - c4*s1*s2 - c1*c3*s2*s4 - c2*c3*s1*s4;
 
     _rotation_jacobian = _alternating_euler.inverse()*_alternating_rotation;
     return _rotation_jacobian;
@@ -442,52 +441,6 @@ void Arm::tf_broadcaster()
     transformStamped.transform.rotation.w = q.w();
 
     br.sendTransform(transformStamped);
-    
-    // XYZ Euler
-    // transformStamped.header.stamp = ros::Time::now();
-    // transformStamped.header.frame_id = "arm_base_link";
-    // transformStamped.child_frame_id = "eulerX";
-    // transformStamped.transform.translation.x = _position(0,0)/1000.0;
-    // transformStamped.transform.translation.y = _position(1,0)/1000.0;
-    // transformStamped.transform.translation.z = _position(2,0)/1000.0;
-    
-    // q.setRPY(_euler(0,0), 0, 0);
-    // transformStamped.transform.rotation.x = q.x();
-    // transformStamped.transform.rotation.y = q.y();
-    // transformStamped.transform.rotation.z = q.z();
-    // transformStamped.transform.rotation.w = q.w();
-
-    // br.sendTransform(transformStamped);
-
-    // transformStamped.header.stamp = ros::Time::now();
-    // transformStamped.header.frame_id = "eulerX";
-    // transformStamped.child_frame_id = "eulerXY";
-    // transformStamped.transform.translation.x = 0;
-    // transformStamped.transform.translation.y = 0;
-    // transformStamped.transform.translation.z = 0;
-    
-    // q.setRPY(0, _euler(1,0), 0);
-    // transformStamped.transform.rotation.x = q.x();
-    // transformStamped.transform.rotation.y = q.y();
-    // transformStamped.transform.rotation.z = q.z();
-    // transformStamped.transform.rotation.w = q.w();
-
-    // br.sendTransform(transformStamped);
-
-    // transformStamped.header.stamp = ros::Time::now();
-    // transformStamped.header.frame_id = "eulerXY";
-    // transformStamped.child_frame_id = "eulerXYZ";
-    // transformStamped.transform.translation.x = 0;
-    // transformStamped.transform.translation.y = 0;
-    // transformStamped.transform.translation.z = 0;
-    
-    // q.setRPY(0, 0, _euler(2,0));
-    // transformStamped.transform.rotation.x = q.x();
-    // transformStamped.transform.rotation.y = q.y();
-    // transformStamped.transform.rotation.z = q.z();
-    // transformStamped.transform.rotation.w = q.w();
-
-    // br.sendTransform(transformStamped);
     
     // Joint 0
     transformStamped.header.stamp = ros::Time::now();

@@ -28,14 +28,14 @@
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI;
 
 Arm arm;
-Eigen::Matrix<double, 6, 1> joint_rotation;
+Eigen::Matrix<double, 6, 1> joint_angle;
 int operating_mode;
 
-void joint_rotation_cb(geometry_msgs::Pose::ConstPtr msg)
+void target_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
     operating_mode = msg->orientation.w;
-    if(operating_mode > 0.5) arm.setTargetPose(*msg);
-    else joint_rotation << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
+    if(operating_mode < 0.5) joint_angle << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
+    arm.setTargetPose(*msg);
 }
 
 int main(int argc, char **argv)
@@ -46,19 +46,15 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(rate);
 
     // Subscriber
-    ros::Subscriber joint_rotation_sub = nh.subscribe<geometry_msgs::Pose>("joint_rotation", 10, joint_rotation_cb);
+    ros::Subscriber target_pose_sub = nh.subscribe<geometry_msgs::Pose>("target_pose", 10, target_pose_cb);
 
     while(nh.ok())
     {
         arm.simulationUpdate();
         arm.getPose();
 
-        if(operating_mode > 0.5) arm.setAngularVelocity(arm.inverseKinematics());
-        else
-        {
-            arm.setAngle(joint_rotation);
-            
-        }
+        if(operating_mode < 0.5) arm.setAngle(joint_angle);
+        arm.setAngularVelocity(arm.inverseKinematics());
         
         arm.print();
 
