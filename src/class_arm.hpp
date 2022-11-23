@@ -52,6 +52,8 @@ class Arm
         double _proportional_gain = 1.0;
         bool _is_first_linear_polation = true;
         double _midpoint, _duration_time, _liniar_velocity = 50;    // _liner_velocity[mm/s]
+        Eigen::Matrix<double, 6, 1> _error;
+        double _accuracy = 1.0;
         ros::Time _start_time_move;
         Eigen::Matrix<double, 6, 1> _target_pose, _target_pose_old, _target_pose_mid, _target_pose_start, _anguler_velocity;
         Eigen::Matrix<double, 6, 6> _jacobian, _jacobian_inverse;
@@ -85,6 +87,7 @@ class Arm
         Eigen::Matrix<double, 6, 1> linearInterpolation();
         void setStartPose();
         double getDistance();
+        bool isInTargetPose();
         Eigen::Matrix<double, 6, 1> inverseKinematics();
         Eigen::Matrix<double, 6, 6> getJacobian();
         Eigen::Matrix<double, 3, 6> getTranslationJacobian();
@@ -149,7 +152,7 @@ void Arm::print()
     << std::endl
     << "error"
     << std::endl
-    << linearInterpolation()-_pose
+    << _error
     << std::endl
 
     // << std::endl
@@ -157,6 +160,12 @@ void Arm::print()
     // << std::endl
     // << _alternating_euler.inverse()*_alternating_euler
     // << std::endl
+
+    << std::endl
+    << "is in target pose"
+    << std::endl
+    << isInTargetPose()
+    << std::endl
 
     << std::endl;
 }
@@ -237,6 +246,7 @@ Eigen::Matrix<double, 6, 1> Arm::getPose()
     _pose(3,0) = _euler(0,0);
     _pose(4,0) = _euler(1,0);
     _pose(5,0) = _euler(2,0);
+    _error = _target_pose-_pose;
     return _pose;
 }
 
@@ -279,6 +289,12 @@ void Arm::setStartPose()
 double Arm::getDistance()
 {
     return sqrt(pow((_target_pose(0,0)-_target_pose_start(0,0)),2)+pow((_target_pose(1,0)-_target_pose_start(1,0)),2)+pow((_target_pose(2,0)-_target_pose_start(2,0)),2));
+}
+
+bool Arm::isInTargetPose()
+{
+    if(_error.transpose()*_error < _accuracy) return true;
+    return false;
 }
 
 Eigen::Matrix<double, 6, 1> Arm::inverseKinematics()
