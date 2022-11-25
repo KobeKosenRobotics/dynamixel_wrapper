@@ -35,8 +35,9 @@ class Arm
         Eigen::Matrix<double, 6, 1> _sensor_angle, _sensor_angular_velocity;
         Eigen::Matrix<double, 6, 1> _motor_angle, _motor_angular_velocity;
         Eigen::Matrix<double, 6, 1> _angle_error;
-        Eigen::Matrix<double, 6, 1> _target_angle;
+        Eigen::Matrix<double, 6, 1> _target_angle, _target_angle_old;
         double _angle_accuracy = 0.00001;
+        double _operating_mode_angular_velocity;
 
         // Forward Kinematics
         Eigen::Matrix<double, 3, 3> _rotation_all;
@@ -64,7 +65,14 @@ class Arm
         Eigen::Matrix<double, 3, 3> _alternating_euler;
         Eigen::Matrix<double, 3, 6> _alternating_rotation;
 
+        // Topic Communication
+        geometry_msgs::Pose _msg_old;
+
     public:
+        // Public
+        void setTarget(geometry_msgs::Pose msg);
+        void update();
+
         // Initialize
         Arm();
         void initialize();
@@ -79,6 +87,7 @@ class Arm
         void setAngle(Eigen::Matrix<double, 6, 1> angle_rad);
         void setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps);
         void setTargetAngle(Eigen::Matrix<double, 6, 1> target_angle);
+        void setTargetAngle(geometry_msgs::Pose target_angle);
         Eigen::Matrix<double, 6, 1> getTargetAngle();
         bool isInTargetAngle();
 
@@ -92,6 +101,7 @@ class Arm
         void setTargetPose(geometry_msgs::Pose target_pose);
         Eigen::Matrix<double, 6, 1> linearInterpolation();
         void setStartPose();
+        void setStartPose(geometry_msgs::Pose msg);
         double getDistance();
         bool isInTargetPose();
         Eigen::Matrix<double, 6, 1> inverseKinematics();
@@ -104,6 +114,25 @@ class Arm
         void simulationUpdate();
         void tf_broadcaster();
 };
+
+// Public
+void Arm::setTarget(geometry_msgs::Pose msg)
+{
+    _operating_mode_angular_velocity = msg.orientation.w;
+    if(_operating_mode_angular_velocity < 0.5) setTargetAngle(msg);
+    else setTargetPose(msg);
+    setStartPose(msg);
+}
+
+void Arm::update()
+{
+    simulationUpdate();
+    getPose();
+    print();
+
+    if(_operating_mode_angular_velocity < 0.5) setAngle(getTargetAngle());
+    else setAngularVelocity(inverseKinematics());
+}
 
 // Initialize
 Arm::Arm()
@@ -155,17 +184,17 @@ void Arm::print()
     // << inverseKinematics()
     // << std::endl
 
-    << std::endl
-    << "error"
-    << std::endl
-    << _angle_error.transpose()*_angle_error
-    << std::endl
-
     // << std::endl
     // << "eye"
     // << std::endl
     // << _alternating_euler.inverse()*_alternating_euler
     // << std::endl
+
+    << std::endl
+    << "operating mode angular velocity"
+    << std::endl
+    << _operating_mode_angular_velocity
+    << std::endl
 
     << std::endl
     << "is in target pose"
@@ -174,9 +203,27 @@ void Arm::print()
     << std::endl
 
     << std::endl
+    << "pose error"
+    << std::endl
+    << _pose_error
+    << std::endl
+
+    << std::endl
     << "is in target angle"
     << std::endl
     << isInTargetAngle()
+    << std::endl
+
+    << std::endl
+    << "angle error"
+    << std::endl
+    << _angle_error
+    << std::endl
+
+    << std::endl
+    << "midpoint"
+    << std::endl
+    << _midpoint
     << std::endl
 
     << std::endl;
@@ -231,6 +278,16 @@ void Arm::setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps)
 void Arm::setTargetAngle(Eigen::Matrix<double, 6, 1> target_angle)
 {
     _target_angle = target_angle;
+}
+
+void Arm::setTargetAngle(geometry_msgs::Pose target_angle)
+{
+    _target_angle(0,0) = target_angle.position.x;
+    _target_angle(1,0) = target_angle.position.y;
+    _target_angle(2,0) = target_angle.position.z;
+    _target_angle(3,0) = target_angle.orientation.x;
+    _target_angle(4,0) = target_angle.orientation.y;
+    _target_angle(5,0) = target_angle.orientation.z;
 }
 
 Eigen::Matrix<double, 6, 1> Arm::getTargetAngle()
@@ -312,7 +369,18 @@ void Arm::setStartPose()
         _start_time_move = ros::Time::now();
         _duration_time = getDistance()/_liniar_velocity;
     }
-    _target_pose_old = _target_pose;   
+    _target_pose_old = _target_pose;
+}
+
+void Arm::setStartPose(geometry_msgs::Pose msg)
+{
+    if(msg != _msg_old)
+    {
+        _target_pose_start = _pose;
+        _start_time_move = ros::Time::now();
+        _duration_time = getDistance()/_liniar_velocity;
+    }
+    _msg_old = msg;
 }
 
 double Arm::getDistance()

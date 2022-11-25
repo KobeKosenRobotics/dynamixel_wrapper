@@ -33,10 +33,7 @@ int operating_mode;
 
 void target_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
-    operating_mode = msg->orientation.w;
-    joint_angle << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
-    arm.setTargetAngle(joint_angle);
-    arm.setTargetPose(*msg);
+    arm.setTarget(*msg);
 }
 
 int main(int argc, char **argv)
@@ -51,14 +48,8 @@ int main(int argc, char **argv)
 
     while(nh.ok())
     {
-        arm.simulationUpdate();
-        arm.getPose();
-
-        if(operating_mode < 0.5) arm.setAngle(arm.getTargetAngle());
-        else arm.setAngularVelocity(arm.inverseKinematics());
+        arm.update();
         
-        arm.print();
-
         ros::spinOnce();
         loop_rate.sleep();
     }
