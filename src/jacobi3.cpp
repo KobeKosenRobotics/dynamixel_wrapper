@@ -35,6 +35,7 @@ void target_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
     operating_mode = msg->orientation.w;
     joint_angle << msg->position.x, msg->position.y, msg->position.z, msg->orientation.x, msg->orientation.y, msg->orientation.z;
+    arm.setTargetAngle(joint_angle);
     arm.setTargetPose(*msg);
 }
 
@@ -53,7 +54,7 @@ int main(int argc, char **argv)
         arm.simulationUpdate();
         arm.getPose();
 
-        if(operating_mode < 0.5) arm.setAngle(joint_angle);
+        if(operating_mode < 0.5) arm.setAngle(arm.getTargetAngle());
         else arm.setAngularVelocity(arm.inverseKinematics());
         
         arm.print();

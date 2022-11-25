@@ -34,6 +34,9 @@ class Arm
         int _operating_mode = 1;
         Eigen::Matrix<double, 6, 1> _sensor_angle, _sensor_angular_velocity;
         Eigen::Matrix<double, 6, 1> _motor_angle, _motor_angular_velocity;
+        Eigen::Matrix<double, 6, 1> _angle_error;
+        Eigen::Matrix<double, 6, 1> _target_angle;
+        double _angle_accuracy = 0.00001;
 
         // Forward Kinematics
         Eigen::Matrix<double, 3, 3> _rotation_all;
@@ -52,8 +55,8 @@ class Arm
         double _proportional_gain = 1.0;
         bool _is_first_linear_polation = true;
         double _midpoint, _duration_time, _liniar_velocity = 50;    // _liner_velocity[mm/s]
-        Eigen::Matrix<double, 6, 1> _error;
-        double _accuracy = 1.0;
+        Eigen::Matrix<double, 6, 1> _pose_error;
+        double _pose_accuracy = 1.0;
         ros::Time _start_time_move;
         Eigen::Matrix<double, 6, 1> _target_pose, _target_pose_old, _target_pose_mid, _target_pose_start, _anguler_velocity;
         Eigen::Matrix<double, 6, 6> _jacobian, _jacobian_inverse;
@@ -75,6 +78,9 @@ class Arm
         Eigen::Matrix<double, 6, 1> getAngularVelocity();
         void setAngle(Eigen::Matrix<double, 6, 1> angle_rad);
         void setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps);
+        void setTargetAngle(Eigen::Matrix<double, 6, 1> target_angle);
+        Eigen::Matrix<double, 6, 1> getTargetAngle();
+        bool isInTargetAngle();
 
         // Forward Kinematics
         Eigen::Matrix<double, 3, 1> getPosition();
@@ -152,7 +158,7 @@ void Arm::print()
     << std::endl
     << "error"
     << std::endl
-    << _error
+    << _angle_error.transpose()*_angle_error
     << std::endl
 
     // << std::endl
@@ -167,6 +173,12 @@ void Arm::print()
     << isInTargetPose()
     << std::endl
 
+    << std::endl
+    << "is in target angle"
+    << std::endl
+    << isInTargetAngle()
+    << std::endl
+
     << std::endl;
 }
 
@@ -179,6 +191,7 @@ Eigen::Matrix<double, 6, 1> Arm::getAngle()
     _sensor_angle(3,0) = joint3.getPresentPosition();
     _sensor_angle(4,0) = joint4.getPresentPosition();
     _sensor_angle(5,0) = joint5.getPresentPosition();
+    _angle_error = _target_angle-_sensor_angle;
     return _sensor_angle;
 }
 
@@ -215,6 +228,22 @@ void Arm::setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps)
     joint5.setGOalVelocity(_motor_angular_velocity(5,0));
 }
 
+void Arm::setTargetAngle(Eigen::Matrix<double, 6, 1> target_angle)
+{
+    _target_angle = target_angle;
+}
+
+Eigen::Matrix<double, 6, 1> Arm::getTargetAngle()
+{
+    return _target_angle;
+}
+
+bool Arm::isInTargetAngle()
+{
+    if(_angle_error.transpose()*_angle_error < _angle_accuracy) return true;
+    return false;
+}
+
 // Forward Kinematics
 Eigen::Matrix<double, 3, 1> Arm::getPosition()
 {
@@ -246,7 +275,7 @@ Eigen::Matrix<double, 6, 1> Arm::getPose()
     _pose(3,0) = _euler(0,0);
     _pose(4,0) = _euler(1,0);
     _pose(5,0) = _euler(2,0);
-    _error = _target_pose-_pose;
+    _pose_error = _target_pose-_pose;
     return _pose;
 }
 
@@ -293,7 +322,7 @@ double Arm::getDistance()
 
 bool Arm::isInTargetPose()
 {
-    if(_error.transpose()*_error < _accuracy) return true;
+    if(_pose_error.transpose()*_pose_error < _pose_accuracy) return true;
     return false;
 }
 
