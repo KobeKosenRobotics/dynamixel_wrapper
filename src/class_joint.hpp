@@ -197,7 +197,7 @@ void Joint::setGOalVelocity(double motor_angular_velocity_radps)
     {
         _motor_angular_velocity = motor_angular_velocity_radps;
         #ifndef SIMULATION
-        _motor.setGoalPosition(_motor_angular_velocity*radps2rpm);
+        _motor.setGoalVelocity(_motor_angular_velocity*radps2rpm);
         #endif
         #ifdef SIMULATION
         _simulation_angular_velocity = _motor_angular_velocity;
