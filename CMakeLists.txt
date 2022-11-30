@@ -84,3 +84,6 @@ target_link_libraries(check_inverse ${catkin_LIBRARIES} "/usr/include/eigen3")
 
 add_executable(quasi_orientation src/quasi_orientation.cpp)
 target_link_libraries(quasi_orientation ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(motor src/motor.cpp)
+target_link_libraries(motor ${catkin_LIBRARIES} "/usr/include/eigen3")
