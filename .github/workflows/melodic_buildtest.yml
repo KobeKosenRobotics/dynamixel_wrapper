@@ -1,4 +1,4 @@
-name: BuildTest
+name: Melodic build
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
 jobs:
   job1:
     name: BuildTest
