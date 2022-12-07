@@ -41,7 +41,7 @@ class Joint
         double _simulation_angle, _simulation_angular_velocity;
         double _global_theta;
         double _motor_angle, _motor_angular_velocity;
-        double _proportional_gain = 2.0;
+        double _proportional_gain;
 
         // Rotation Matrix
         Eigen::Matrix<double, 3, 3> _rotation_matrix;
@@ -53,7 +53,7 @@ class Joint
         // Initialize
         Joint();
         void initialize(double link_x, double link_y, double link_z, char axis);
-        void initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, double adjust_deg, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode);
+        void initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, double adjust_deg, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode, double proportional_gain);
 
         void setHomingOffset(double homing_offset, double adjust_deg);
         void setTorqueEnable(bool state);
@@ -89,7 +89,7 @@ void Joint::initialize(double link_x, double link_y, double link_z, char axis)
     _link << link_x, link_y, link_z;
 }
 
-void Joint::initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, double adjust_deg, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode)
+void Joint::initialize(double link_x, double link_y, double link_z, char axis, double homing_offset, double adjust_deg, int id, dynamixel_wrapper::dynamixel_wrapper_base dxl_base, dynamixel_wrapper::dynamixel_wrapper_config motor_config, int operating_mode, double proportional_gain)
 {
     initialize(link_x, link_y, link_z, axis);
     _operating_mode = operating_mode;
@@ -98,6 +98,7 @@ void Joint::initialize(double link_x, double link_y, double link_z, char axis, d
     #endif
     setTorqueEnable(false);
     setHomingOffset(homing_offset, adjust_deg);
+    _proportional_gain = proportional_gain;
     _is_first_simulation = true;
 }
 

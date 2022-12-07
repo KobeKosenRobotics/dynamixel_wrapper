@@ -79,12 +79,12 @@ int main(int argc, char **argv)
     motor5.setTorqueEnable(false);
     motor5.setHomingOffset(0.0);
 
-    // motor0.setTorqueEnable(true);
-    // motor1.setTorqueEnable(true);
-    // motor2.setTorqueEnable(true);
-    // motor3.setTorqueEnable(true);
-    // motor4.setTorqueEnable(true);
-    // motor5.setTorqueEnable(true);
+    motor0.setTorqueEnable(true);
+    motor1.setTorqueEnable(true);
+    motor2.setTorqueEnable(true);
+    motor3.setTorqueEnable(true);
+    motor4.setTorqueEnable(true);
+    motor5.setTorqueEnable(true);
 
     while(nh.ok())
     {
@@ -97,12 +97,18 @@ int main(int argc, char **argv)
 
         std::cout << angle_pose << std::endl << std::endl;
 
-        // if(fabs(angular_velocity_pose.position.x) < 3.0 && fabs(angle_pose.position.x) < 2.5) motor0.setGoalVelocity(angular_velocity_pose.position.x*radps2rpm);
-        // if(fabs(angular_velocity_pose.position.y) < 3.0 && fabs(angle_pose.position.y) < 2.5) motor1.setGoalVelocity(angular_velocity_pose.position.y*radps2rpm);
-        // if(fabs(angular_velocity_pose.position.z) < 3.0 && fabs(angle_pose.position.z) < 2.5) motor2.setGoalVelocity(angular_velocity_pose.position.z*radps2rpm);
-        // if(fabs(angular_velocity_pose.orientation.x) < 3.0 && fabs(angle_pose.orientation.x) < 2.5) motor3.setGoalVelocity(angular_velocity_pose.orientation.x*radps2rpm);
-        // if(fabs(angular_velocity_pose.orientation.y) < 3.0 && fabs(angle_pose.orientation.y) < 2.5) motor4.setGoalVelocity(angular_velocity_pose.orientation.y*radps2rpm);
-        // if(fabs(angular_velocity_pose.orientation.z) < 3.0 && fabs(angle_pose.orientation.z) < 2.5) motor5.setGoalVelocity(angular_velocity_pose.orientation.z*radps2rpm);
+        if(fabs(angular_velocity_pose.position.x) < 3.0 && fabs(angle_pose.position.x) < 2.5) motor0.setGoalVelocity(angular_velocity_pose.position.x*radps2rpm);
+        else motor0.setGoalVelocity(0.0);
+        if(fabs(angular_velocity_pose.position.y) < 3.0 && fabs(angle_pose.position.y) < 2.5) motor1.setGoalVelocity(angular_velocity_pose.position.y*radps2rpm);
+        else motor1.setGoalVelocity(0.0);
+        if(fabs(angular_velocity_pose.position.z) < 3.0 && fabs(angle_pose.position.z) < 2.5) motor2.setGoalVelocity(angular_velocity_pose.position.z*radps2rpm);
+        else motor2.setGoalVelocity(0.0);
+        if(fabs(angular_velocity_pose.orientation.x) < 3.0 && fabs(angle_pose.orientation.x) < 2.5) motor3.setGoalVelocity(angular_velocity_pose.orientation.x*radps2rpm);
+        else motor3.setGoalVelocity(0.0);
+        if(fabs(angular_velocity_pose.orientation.y) < 3.0 && fabs(angle_pose.orientation.y) < 2.5) motor4.setGoalVelocity(angular_velocity_pose.orientation.y*radps2rpm);
+        else motor4.setGoalVelocity(0.0);
+        if(fabs(angular_velocity_pose.orientation.z) < 3.0 && fabs(angle_pose.orientation.z) < 2.5) motor5.setGoalVelocity(angular_velocity_pose.orientation.z*radps2rpm);
+        else motor5.setGoalVelocity(0.0);
         
         angle_pub.publish(angle_pose);
 
