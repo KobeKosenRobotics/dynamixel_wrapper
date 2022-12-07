@@ -83,6 +83,7 @@ class Arm
 
         // Motor
         Eigen::Matrix<double, 6, 1> getAngle();
+        Eigen::Matrix<double, 6, 1> getAngle(geometry_msgs::Pose msg);
         Eigen::Matrix<double, 6, 1> getAngularVelocity();
         void setAngle(Eigen::Matrix<double, 6, 1> angle_rad);
         void setAngularVelocity(Eigen::Matrix<double, 6, 1> angular_velocity_radps);
@@ -143,9 +144,9 @@ Arm::Arm()
 void Arm::initialize()
 {
     #ifndef SIMULATION
-    std::string _port_name("/dev/ttyUSB0");
-    int _baudrate = 1000000;
-    _dxl_base.initialize(_port_name, _baudrate);
+    // std::string _port_name("/dev/ttyUSB0");
+    // int _baudrate = 1000000;
+    // _dxl_base.initialize(_port_name, _baudrate);
     #endif
 
     joint_offset.initialize(  0.0, 0.0, 159.0, 'o');
@@ -242,6 +243,18 @@ Eigen::Matrix<double, 6, 1> Arm::getAngle()
     return _sensor_angle;
 }
 
+Eigen::Matrix<double, 6, 1> Arm::getAngle(geometry_msgs::Pose msg)
+{
+    _sensor_angle(0,0) = joint0.getPresentPosition(msg.position.x);
+    _sensor_angle(1,0) = joint1.getPresentPosition(msg.position.y);
+    _sensor_angle(2,0) = joint2.getPresentPosition(msg.position.z);
+    _sensor_angle(3,0) = joint3.getPresentPosition(msg.orientation.x);
+    _sensor_angle(4,0) = joint4.getPresentPosition(msg.orientation.y);
+    _sensor_angle(5,0) = joint5.getPresentPosition(msg.orientation.z);
+    _angle_error = _target_angle-_sensor_angle;
+    return _sensor_angle;
+}
+
 Eigen::Matrix<double, 6, 1> Arm::getAngularVelocity()
 {
     _sensor_angular_velocity(0,0) = joint0.getPresentVelocity();
@@ -323,7 +336,6 @@ Eigen::Matrix<double, 3, 1> Arm::getEulerAngle()
 
 Eigen::Matrix<double, 6, 1> Arm::getPose()
 {
-    getAngle();
     getPosition();
     getEulerAngle();
     _pose(0,0) = _position(0,0);

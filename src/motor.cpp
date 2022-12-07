@@ -1,5 +1,3 @@
-#define SIMULATION
-
 #include "class_joint.hpp"
 #include "class_arm.hpp"
 
@@ -25,7 +23,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI;
+const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
 
 Arm arm;
 
@@ -41,7 +39,7 @@ void angular_velocity_cb(geometry_msgs::Pose::ConstPtr msg)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "Arm");
+    ros::init(argc, argv, "Motor");
     ros::NodeHandle nh;
     double rate = 100.0;
     ros::Rate loop_rate(rate);
@@ -65,49 +63,58 @@ int main(int argc, char **argv)
 
     motor0.setTorqueEnable(false);
     motor0.setHomingOffset(0.0);
-    motor0.setTorqueEnable(true);
 
     motor1.setTorqueEnable(false);
     motor1.setHomingOffset(36.3);
-    motor1.setTorqueEnable(true);
 
     motor2.setTorqueEnable(false);
     motor2.setHomingOffset(45.0);
-    motor2.setTorqueEnable(true);
 
     motor3.setTorqueEnable(false);
     motor3.setHomingOffset(0.0);
-    motor3.setTorqueEnable(true);
 
     motor4.setTorqueEnable(false);
     motor4.setHomingOffset(0.0);
-    motor4.setTorqueEnable(true);
 
     motor5.setTorqueEnable(false);
     motor5.setHomingOffset(0.0);
-    motor5.setTorqueEnable(true);
+
+    // motor0.setTorqueEnable(true);
+    // motor1.setTorqueEnable(true);
+    // motor2.setTorqueEnable(true);
+    // motor3.setTorqueEnable(true);
+    // motor4.setTorqueEnable(true);
+    // motor5.setTorqueEnable(true);
 
     while(nh.ok())
     {
-        angle_pose.position.x = motor0.getPresentPosition();
-        angle_pose.position.y = motor1.getPresentPosition();
-        angle_pose.position.z = motor2.getPresentPosition();
-        angle_pose.orientation.x = motor3.getPresentPosition();
-        angle_pose.orientation.y = motor4.getPresentPosition();
-        angle_pose.orientation.z = motor5.getPresentPosition();
+        angle_pose.position.x = motor0.getPresentPosition()*deg2rad;
+        angle_pose.position.y = motor1.getPresentPosition()*deg2rad;
+        angle_pose.position.z = motor2.getPresentPosition()*deg2rad;
+        angle_pose.orientation.x = motor3.getPresentPosition()*deg2rad;
+        angle_pose.orientation.y = motor4.getPresentPosition()*deg2rad;
+        angle_pose.orientation.z = motor5.getPresentPosition()*deg2rad;
 
-        if(fabs(angular_velocity_pose.position.x) < 3.0) motor0.setGoalVelocity(angular_velocity_pose.position.x);
-        if(fabs(angular_velocity_pose.position.y) < 3.0) motor1.setGoalVelocity(angular_velocity_pose.position.y);
-        if(fabs(angular_velocity_pose.position.z) < 3.0) motor2.setGoalVelocity(angular_velocity_pose.position.z);
-        if(fabs(angular_velocity_pose.orientation.x) < 3.0) motor3.setGoalVelocity(angular_velocity_pose.orientation.x);
-        if(fabs(angular_velocity_pose.orientation.y) < 3.0) motor4.setGoalVelocity(angular_velocity_pose.orientation.y);
-        if(fabs(angular_velocity_pose.orientation.z) < 3.0) motor5.setGoalVelocity(angular_velocity_pose.orientation.z);
+        std::cout << angle_pose << std::endl << std::endl;
+
+        // if(fabs(angular_velocity_pose.position.x) < 3.0 && fabs(angle_pose.position.x) < 2.5) motor0.setGoalVelocity(angular_velocity_pose.position.x*radps2rpm);
+        // if(fabs(angular_velocity_pose.position.y) < 3.0 && fabs(angle_pose.position.y) < 2.5) motor1.setGoalVelocity(angular_velocity_pose.position.y*radps2rpm);
+        // if(fabs(angular_velocity_pose.position.z) < 3.0 && fabs(angle_pose.position.z) < 2.5) motor2.setGoalVelocity(angular_velocity_pose.position.z*radps2rpm);
+        // if(fabs(angular_velocity_pose.orientation.x) < 3.0 && fabs(angle_pose.orientation.x) < 2.5) motor3.setGoalVelocity(angular_velocity_pose.orientation.x*radps2rpm);
+        // if(fabs(angular_velocity_pose.orientation.y) < 3.0 && fabs(angle_pose.orientation.y) < 2.5) motor4.setGoalVelocity(angular_velocity_pose.orientation.y*radps2rpm);
+        // if(fabs(angular_velocity_pose.orientation.z) < 3.0 && fabs(angle_pose.orientation.z) < 2.5) motor5.setGoalVelocity(angular_velocity_pose.orientation.z*radps2rpm);
         
         angle_pub.publish(angle_pose);
 
         ros::spinOnce();
         loop_rate.sleep();
     }
+    motor0.setTorqueEnable(false);
+    motor1.setTorqueEnable(false);
+    motor2.setTorqueEnable(false);
+    motor3.setTorqueEnable(false);
+    motor4.setTorqueEnable(false);
+    motor5.setTorqueEnable(false);
 
     return 0;
 }

@@ -61,9 +61,11 @@ class Joint
         // Motor
         void setLED(int red, int green, int blue);
         double getPresentPosition();
+        double getPresentPosition(double msg);
         double getPresentVelocity();
         void setGoalPosition(double motor_angle_rad);
         void setGOalVelocity(double motor_angular_velocity_radps);
+        double getMotorAngularVelocity();
 
         // Rotation Matrix
         double getGlobalAngle();
@@ -92,7 +94,7 @@ void Joint::initialize(double link_x, double link_y, double link_z, char axis, d
     initialize(link_x, link_y, link_z, axis);
     _operating_mode = operating_mode;
     #ifndef SIMULATION
-    _motor.initialize(id, dxl_base, motor_config, operating_mode);
+    // _motor.initialize(id, dxl_base, motor_config, operating_mode);
     #endif
     setTorqueEnable(false);
     setHomingOffset(homing_offset, adjust_deg);
@@ -102,7 +104,7 @@ void Joint::initialize(double link_x, double link_y, double link_z, char axis, d
 void Joint::setTorqueEnable(bool state)
 {
     #ifndef SIMULATION
-    _motor.setTorqueEnable(state);
+    // _motor.setTorqueEnable(state);
     #endif
 }
 
@@ -111,7 +113,7 @@ void Joint::setHomingOffset(double homing_offset, double adjust_deg)
     setTorqueEnable(false);
     _homing_offset = homing_offset;
     #ifndef SIMULATION
-    _motor.setHomingOffset(-_homing_offset*rad2deg-adjust_deg);
+    // _motor.setHomingOffset(-_homing_offset*rad2deg-adjust_deg);
     #endif
 }
 
@@ -119,14 +121,14 @@ void Joint::setHomingOffset(double homing_offset, double adjust_deg)
 void Joint::setLED(int red, int green, int blue)
 {
     #ifndef SIMULATION
-    _motor.setLED(red, green, blue);
+    // _motor.setLED(red, green, blue);
     #endif
 }
 
 double Joint::getPresentPosition()
 {
     #ifndef SIMULATION
-    _sensor_angle = _motor.getPresentPosition()*deg2rad;
+    // _sensor_angle = _motor.getPresentPosition()*deg2rad;
     #endif
     #ifdef SIMULATION
     _sensor_angle = _simulation_angle;
@@ -134,10 +136,18 @@ double Joint::getPresentPosition()
     return _sensor_angle;
 }
 
+double Joint::getPresentPosition(double msg)
+{
+    #ifndef SIMULATION
+    _sensor_angle = msg;
+    #endif
+    return _sensor_angle;
+}
+
 double Joint::getPresentVelocity()
 {
     #ifndef SIMULATION
-    _sensor_angular_velocity = _motor.getPresentVelocity()*rpm2radps;
+    // _sensor_angular_velocity = _motor.getPresentVelocity()*rpm2radps;
     #endif
     #ifdef SIMULATION
     _sensor_angular_velocity = _simulation_angular_velocity;
@@ -164,7 +174,8 @@ void Joint::setGoalPosition(double motor_angle_rad)
         if(_operating_mode == 1)
         {
             #ifndef SIMULATION
-            _motor.setGoalVelocity(_proportional_gain*(_motor_angle-_sensor_angle));
+            _motor_angular_velocity = _proportional_gain*(_motor_angle-_sensor_angle);
+            // _motor.setGoalVelocity(_motor_angular_velocity*radps2rpm);
             #endif
             _simulation_angular_velocity = _proportional_gain*(_motor_angle-_sensor_angle);
         }
@@ -172,7 +183,7 @@ void Joint::setGoalPosition(double motor_angle_rad)
         {
             
             #ifndef SIMULATION
-            _motor.setGoalPosition(_motor_angle*rad2deg);
+            // _motor.setGoalPosition(_motor_angle*rad2deg);
             #endif
             #ifdef SIMULATION
             _simulation_angle = _motor_angle;
@@ -197,12 +208,17 @@ void Joint::setGOalVelocity(double motor_angular_velocity_radps)
     {
         _motor_angular_velocity = motor_angular_velocity_radps;
         #ifndef SIMULATION
-        _motor.setGoalVelocity(_motor_angular_velocity*radps2rpm);
+        // _motor.setGoalVelocity(_motor_angular_velocity*radps2rpm);
         #endif
         #ifdef SIMULATION
         _simulation_angular_velocity = _motor_angular_velocity;
         #endif
     }
+}
+
+double Joint::getMotorAngularVelocity()
+{
+    return _motor_angular_velocity;
 }
 
 // Rotation Matrix
