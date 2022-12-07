@@ -151,11 +151,11 @@ void Arm::initialize()
 
     joint_offset.initialize(  0.0, 0.0, 159.0, 'o');
           joint0.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 1, _dxl_base, dynamixel_wrapper::PH54_200_S500_R, _operating_mode, 1.0);
-          joint1.initialize( 30.0, 0.0, 264.0, 'y', 0.0, -36.3, 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  _operating_mode, 0.0);
-          joint2.initialize(-30.0, 0.0, 258.0, 'y', 0.0, -45.0, 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode, 0.0);
-          joint3.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode, 0.0);
-          joint4.initialize(  0.0, 0.0, 123.0, 'y', 0.0,   0.0, 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode, 0.0);
-          joint5.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode, 0.0);
+          joint1.initialize( 30.0, 0.0, 264.0, 'y', 0.0, -36.3, 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  _operating_mode, 1.0);
+          joint2.initialize(-30.0, 0.0, 258.0, 'y', 0.0, -45.0, 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode, 1.0);
+          joint3.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode, 1.0);
+          joint4.initialize(  0.0, 0.0, 123.0, 'y', 0.0,   0.0, 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode, 1.0);
+          joint5.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode, 1.0);
 }
 
 // Debag
