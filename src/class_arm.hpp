@@ -2,6 +2,8 @@
 #define ARM_HPP
 
 #include "class_joint.hpp"
+#include "class_pid.hpp"
+
 #include <ros/ros.h>
 
 #include <tf2/LinearMath/Quaternion.h>
@@ -77,6 +79,7 @@ class Arm
         Arm();
         void initialize();
         Joint joint_offset, joint0, joint1, joint2, joint3, joint4, joint5;
+        Pid pid;
         
         // Debag
         void print();
@@ -179,11 +182,11 @@ void Arm::print()
     // << _alternating_euler.determinant()
     // << std::endl
 
-    // << std::endl
-    // << "angular velocity"
-    // << std::endl
-    // << inverseKinematics()
-    // << std::endl
+    << std::endl
+    << "angular velocity"
+    << std::endl
+    << inverseKinematics()
+    << std::endl
 
     // << std::endl
     // << "eye"
@@ -197,11 +200,11 @@ void Arm::print()
     << _operating_mode_angular_velocity
     << std::endl
 
-    << std::endl
-    << "is in target pose"
-    << std::endl
-    << isInTargetPose()
-    << std::endl
+    // << std::endl
+    // << "is in target pose"
+    // << std::endl
+    // << isInTargetPose()
+    // << std::endl
 
     << std::endl
     << "pose error"
@@ -209,11 +212,11 @@ void Arm::print()
     << _pose_error
     << std::endl
 
-    << std::endl
-    << "is in target angle"
-    << std::endl
-    << isInTargetAngle()
-    << std::endl
+    // << std::endl
+    // << "is in target angle"
+    // << std::endl
+    // << isInTargetAngle()
+    // << std::endl
 
     << std::endl
     << "angle error"
@@ -380,6 +383,7 @@ void Arm::setStartPose()
         _target_pose_start = _pose;
         _start_time_move = ros::Time::now();
         _duration_time = getDistance()/_liniar_velocity;
+        pid.resetPid();
     }
     _target_pose_old = _target_pose;
 }
@@ -408,9 +412,16 @@ bool Arm::isInTargetPose()
 
 Eigen::Matrix<double, 6, 1> Arm::inverseKinematics()
 {
+    // あとで消す.
+    Eigen::Matrix<double, 6, 1> test;
+    test << 0.0, 1.0, 0.0, 0.0, 0.0, 0.0;
+    // あとで消す.
+
     _jacobian = getJacobian();
     _jacobian_inverse = _jacobian.inverse();
-    _anguler_velocity = _proportional_gain*_jacobian_inverse*(linearInterpolation()-_pose);
+    _anguler_velocity = _proportional_gain*_jacobian_inverse*(linearInterpolation()-_pose);    // もとの行.
+    // _anguler_velocity = pid.pid(_jacobian_inverse*(linearInterpolation()-_pose), ros::Time::now());    // 目標の行.
+    // _anguler_velocity = pid.pid(test, ros::Time::now());    // テスト.
     return _anguler_velocity;
 }
 
