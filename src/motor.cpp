@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     motor0.setHomingOffset(0.0);
 
     motor1.setTorqueEnable(false);
-    motor1.setHomingOffset(36.3);
+    motor1.setHomingOffset(35.0);
 
     motor2.setTorqueEnable(false);
     motor2.setHomingOffset(45.0);
