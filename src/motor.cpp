@@ -97,27 +97,27 @@ int main(int argc, char **argv)
 
         std::cout << "angle"  << angle_pose << std::endl << std::endl;
 
-        if(fabs(angle_pose.position.x) > 5) motor0.setGoalVelocity(0.0);
+        if(fabs(angle_pose.position.x) > 10) motor0.setGoalVelocity(0.0);
         // else if(fabs(angular_velocity_pose.position.x) > 3.0) motor0.setGoalVelocity(2.0*angular_velocity_pose.position.x/fabs(angular_velocity_pose.position.x)*radps2rpm);
         else motor0.setGoalVelocity(angular_velocity_pose.position.x*radps2rpm);
 
-        if(fabs(angle_pose.position.y) > 5) motor1.setGoalVelocity(0.0);
+        if(fabs(angle_pose.position.y) > 10) motor1.setGoalVelocity(0.0);
         // else if(fabs(angular_velocity_pose.position.y) > 3.0) motor1.setGoalVelocity(2.0*radps2rpm);
         else motor1.setGoalVelocity(angular_velocity_pose.position.y*radps2rpm);
 
-        if(fabs(angle_pose.position.z) > 5) motor2.setGoalVelocity(0.0);
+        if(fabs(angle_pose.position.z) > 10) motor2.setGoalVelocity(0.0);
         // else if(fabs(angular_velocity_pose.position.z) > 3.0) motor2.setGoalVelocity(2.0*radps2rpm);
         else motor2.setGoalVelocity(angular_velocity_pose.position.z*radps2rpm);
 
-        if(fabs(angle_pose.orientation.x) > 5) motor3.setGoalVelocity(0.0);
+        if(fabs(angle_pose.orientation.x) > 10) motor3.setGoalVelocity(0.0);
         // else if(fabs(angular_velocity_pose.orientation.x) > 3.0) motor3.setGoalVelocity(2.0*radps2rpm);
         else motor3.setGoalVelocity(angular_velocity_pose.orientation.x*radps2rpm);
 
-        if(fabs(angle_pose.orientation.y) > 5) motor4.setGoalVelocity(0.0);
+        if(fabs(angle_pose.orientation.y) > 10) motor4.setGoalVelocity(0.0);
         // else if(fabs(angular_velocity_pose.orientation.y) > 3.0) motor4.setGoalVelocity(2.0*radps2rpm);
         else motor4.setGoalVelocity(angular_velocity_pose.orientation.y*radps2rpm);
 
-        if(fabs(angle_pose.orientation.z) > 5) motor5.setGoalVelocity(0.0);
+        if(fabs(angle_pose.orientation.z) > 10) motor5.setGoalVelocity(0.0);
         // else if(fabs(angular_velocity_pose.orientation.z) > 3.0) motor5.setGoalVelocity(2.0*radps2rpm);
         else motor5.setGoalVelocity(angular_velocity_pose.orientation.z*radps2rpm);
 
