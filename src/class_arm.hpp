@@ -55,7 +55,7 @@ class Arm
         l3x, l3y, l3z, t3, c3, s3,
         l4x, l4y, l4z, t4, c4, s4,
         l5x, l5y, l5z, t5, c5, s5;
-        double _proportional_gain = 1.0;
+        double _proportional_gain = 4.0;
         bool _is_first_linear_polation = true;
         double _midpoint, _duration_time, _liniar_velocity = 50;    // _liner_velocity[mm/s]
         Eigen::Matrix<double, 6, 1> _pose_error;
@@ -156,9 +156,9 @@ void Arm::initialize()
           joint0.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 1, _dxl_base, dynamixel_wrapper::PH54_200_S500_R, _operating_mode, 1.0);
           joint1.initialize( 30.0, 0.0, 264.0, 'y', 0.0, -36.3, 2, _dxl_base, dynamixel_wrapper::H54_200_S500_R,  _operating_mode, 1.0);
           joint2.initialize(-30.0, 0.0, 258.0, 'y', 0.0, -45.0, 3, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode, 1.0);
-          joint3.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode, 1.0);
-          joint4.initialize(  0.0, 0.0, 123.0, 'y', 0.0,   0.0, 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode, 1.0);
-          joint5.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode, 1.0);
+          joint3.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 4, _dxl_base, dynamixel_wrapper::H54_100_S500_R,  _operating_mode, 2.0);
+          joint4.initialize(  0.0, 0.0, 123.0, 'y', 0.0,   0.0, 5, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode, 2.0);
+          joint5.initialize(  0.0, 0.0,   0.0, 'z', 0.0,   0.0, 6, _dxl_base, dynamixel_wrapper::H42_020_S300_R,  _operating_mode, 2.0);
 }
 
 // Debag
@@ -194,11 +194,11 @@ void Arm::print()
     // << _alternating_euler.inverse()*_alternating_euler
     // << std::endl
 
-    << std::endl
-    << "operating mode angular velocity"
-    << std::endl
-    << _operating_mode_angular_velocity
-    << std::endl
+    // << std::endl
+    // << "operating mode angular velocity"
+    // << std::endl
+    // << _operating_mode_angular_velocity
+    // << std::endl
 
     // << std::endl
     // << "is in target pose"
@@ -206,11 +206,11 @@ void Arm::print()
     // << isInTargetPose()
     // << std::endl
 
-    << std::endl
-    << "pose error"
-    << std::endl
-    << _pose_error
-    << std::endl
+    // << std::endl
+    // << "pose error"
+    // << std::endl
+    // << _pose_error
+    // << std::endl
 
     // << std::endl
     // << "is in target angle"
@@ -218,17 +218,17 @@ void Arm::print()
     // << isInTargetAngle()
     // << std::endl
 
-    << std::endl
-    << "angle error"
-    << std::endl
-    << _angle_error
-    << std::endl
+    // << std::endl
+    // << "angle error"
+    // << std::endl
+    // << _angle_error
+    // << std::endl
 
-    << std::endl
-    << "midpoint"
-    << std::endl
-    << _midpoint
-    << std::endl
+    // << std::endl
+    // << "midpoint"
+    // << std::endl
+    // << _midpoint
+    // << std::endl
 
     << std::endl;
 }

@@ -1,4 +1,4 @@
-#define SIMULATION
+// #define SIMULATION
 
 #include "class_joint.hpp"
 #include "class_arm.hpp"
