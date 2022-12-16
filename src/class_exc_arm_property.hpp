@@ -32,6 +32,7 @@ class ExCArmProperty
         Eigen::Matrix<double, JOINT_NUMBER+1, 3> _link;
         Eigen::Matrix<double, 3, JOINT_NUMBER+1> _joint_position;
         Eigen::Matrix<int, 3, JOINT_NUMBER+1> _translation_axis, _rotation_axis;
+        Eigen::Matrix<std::string, JOINT_NUMBER+1, 1> _joint_name;
 
     public:
         ExCArmProperty();
@@ -39,6 +40,7 @@ class ExCArmProperty
         Eigen::Matrix<double, 3, JOINT_NUMBER+1> getJointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link);
         double getLink(int joint, int axis);
         int getAxis(int joint);
+        std::string getJointName(int joint);
 };
 ExCArmProperty exc_arm_property;
 
@@ -64,6 +66,8 @@ ExCArmProperty::ExCArmProperty()
     0, 0, 0, 0, 0, 0, 0,
     0, 1, 1, 0, 1, 0, 0,
     1, 0, 0, 1, 0, 1, 0;
+
+    _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6";
 }
 
 Eigen::Matrix<double, 3, JOINT_NUMBER+1> ExCArmProperty::getJointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link)
@@ -90,6 +94,11 @@ int ExCArmProperty::getAxis(int joint)
     else if(_rotation_axis(1,joint) == 1) return 1;
     else if(_rotation_axis(2,joint) == 1) return 2;
     else return -1;
+}
+
+std::string ExCArmProperty::getJointName(int joint)
+{
+    return _joint_name(joint, 0);
 }
 
 #endif

@@ -85,7 +85,7 @@ void ExCSimulator::tfBroadcaster()
     // Joint 0
     transformStamped.header.stamp = ros::Time::now();
     transformStamped.header.frame_id = "arm_base_link";
-    transformStamped.child_frame_id = "joint0";
+    transformStamped.child_frame_id = exc_arm_property.getJointName(0);
     transformStamped.transform.translation.x = exc_arm_property.getLink(0,0)/1000.0;
     transformStamped.transform.translation.y = exc_arm_property.getLink(0,1)/1000.0;
     transformStamped.transform.translation.z = exc_arm_property.getLink(0,2)/1000.0;
@@ -98,101 +98,24 @@ void ExCSimulator::tfBroadcaster()
 
     br.sendTransform(transformStamped);
 
-    // Joint 1
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "joint0";
-    transformStamped.child_frame_id = "joint1";
-    transformStamped.transform.translation.x = exc_arm_property.getLink(1,0)/1000.0;
-    transformStamped.transform.translation.y = exc_arm_property.getLink(1,1)/1000.0;
-    transformStamped.transform.translation.z = exc_arm_property.getLink(1,2)/1000.0;
+    // Joint 1 ~
+    for(int i = 1; i < JOINT_NUMBER+1; i++)
+    {
+        transformStamped.header.stamp = ros::Time::now();
+        transformStamped.header.frame_id = exc_arm_property.getJointName(i-1);
+        transformStamped.child_frame_id = exc_arm_property.getJointName(i);
+        transformStamped.transform.translation.x = exc_arm_property.getLink(i,0)/1000.0;
+        transformStamped.transform.translation.y = exc_arm_property.getLink(i,1)/1000.0;
+        transformStamped.transform.translation.z = exc_arm_property.getLink(i,2)/1000.0;
 
-    q.setRPY(_joint[1].getSimulationAngle(0), _joint[1].getSimulationAngle(1), _joint[1].getSimulationAngle(2));
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
+        q.setRPY(_joint[i].getSimulationAngle(0), _joint[i].getSimulationAngle(1), _joint[i].getSimulationAngle(2));
+        transformStamped.transform.rotation.x = q.x();
+        transformStamped.transform.rotation.y = q.y();
+        transformStamped.transform.rotation.z = q.z();
+        transformStamped.transform.rotation.w = q.w();
 
-    br.sendTransform(transformStamped);
-
-    // Joint 2
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "joint1";
-    transformStamped.child_frame_id = "joint2";
-    transformStamped.transform.translation.x = exc_arm_property.getLink(2,0)/1000.0;
-    transformStamped.transform.translation.y = exc_arm_property.getLink(2,1)/1000.0;
-    transformStamped.transform.translation.z = exc_arm_property.getLink(2,2)/1000.0;
-
-    q.setRPY(_joint[2].getSimulationAngle(0), _joint[2].getSimulationAngle(1), _joint[2].getSimulationAngle(2));
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-
-    br.sendTransform(transformStamped);
-
-    // Joint 3
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "joint2";
-    transformStamped.child_frame_id = "joint3";
-    transformStamped.transform.translation.x = exc_arm_property.getLink(3,0)/1000.0;
-    transformStamped.transform.translation.y = exc_arm_property.getLink(3,1)/1000.0;
-    transformStamped.transform.translation.z = exc_arm_property.getLink(3,2)/1000.0;
-
-    q.setRPY(_joint[3].getSimulationAngle(0), _joint[3].getSimulationAngle(1), _joint[3].getSimulationAngle(2));
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-
-    br.sendTransform(transformStamped);
-
-    // Joint 4
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "joint3";
-    transformStamped.child_frame_id = "joint4";
-    transformStamped.transform.translation.x = exc_arm_property.getLink(4,0)/1000.0;
-    transformStamped.transform.translation.y = exc_arm_property.getLink(4,1)/1000.0;
-    transformStamped.transform.translation.z = exc_arm_property.getLink(4,2)/1000.0;
-
-    q.setRPY(_joint[4].getSimulationAngle(0), _joint[4].getSimulationAngle(1), _joint[4].getSimulationAngle(2));
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-
-    br.sendTransform(transformStamped);
-
-    // Joint 5
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "joint4";
-    transformStamped.child_frame_id = "joint5";
-    transformStamped.transform.translation.x = exc_arm_property.getLink(5,0)/1000.0;
-    transformStamped.transform.translation.y = exc_arm_property.getLink(5,1)/1000.0;
-    transformStamped.transform.translation.z = exc_arm_property.getLink(5,2)/1000.0;
-
-    q.setRPY(_joint[5].getSimulationAngle(0), _joint[5].getSimulationAngle(1), _joint[5].getSimulationAngle(2));
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-
-    br.sendTransform(transformStamped);
-
-    // Joint 6
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "joint5";
-    transformStamped.child_frame_id = "joint6";
-    transformStamped.transform.translation.x = exc_arm_property.getLink(6,0)/1000.0;
-    transformStamped.transform.translation.y = exc_arm_property.getLink(6,1)/1000.0;
-    transformStamped.transform.translation.z = exc_arm_property.getLink(6,2)/1000.0;
-
-    q.setRPY(_joint[6].getSimulationAngle(0), _joint[6].getSimulationAngle(1), _joint[6].getSimulationAngle(2));
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-
-    br.sendTransform(transformStamped);
+        br.sendTransform(transformStamped);
+    }
 }
 
 #endif

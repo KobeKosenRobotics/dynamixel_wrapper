@@ -33,6 +33,7 @@ class ExCJointSimulator
         ros::Time _start_time_simulation, _end_time_simulation;
         double _simulation_angular_velocity, _simulation_angle = 0.0;
         int _joint, _axis;
+
     public:
         void initialize(int joint);
 
