@@ -87,3 +87,12 @@ target_link_libraries(quasi_orientation ${catkin_LIBRARIES} "/usr/include/eigen3
 
 add_executable(motor src/motor.cpp)
 target_link_libraries(motor ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(exc_calculator src/exc_calculator.cpp)
+target_link_libraries(exc_calculator ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(exc_simulator src/exc_simulator.cpp)
+target_link_libraries(exc_simulator ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(exc_motor src/exc_motor.cpp)
+target_link_libraries(exc_motor ${catkin_LIBRARIES} "/usr/include/eigen3")
