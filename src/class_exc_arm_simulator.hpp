@@ -1,5 +1,5 @@
-#ifndef CLASS_EXC_SIMULATOR_HPP
-#define CLASS_EXC_SIMULATOR_HPP
+#ifndef CLASS_EXC_ARM_SIMULATOR_HPP
+#define CLASS_EXC_ARM_SIMULATOR_HPP
 
 #include "class_exc_arm_property.hpp"
 #include "class_exc_joint_simulator.hpp"
@@ -27,7 +27,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-class ExCSimulator
+class ExCArmSimulator
 {
     private:
         ExCJointSimulator _joint[JOINT_NUMBER+1];
@@ -37,13 +37,13 @@ class ExCSimulator
         void tfBroadcaster();
 
     public:
-        ExCSimulator();
+        ExCArmSimulator();
         void update(std_msgs::Float32MultiArray angular_velocity);
         std_msgs::Float32MultiArray getAngle();
 };
 
 // Public
-ExCSimulator::ExCSimulator()
+ExCArmSimulator::ExCArmSimulator()
 {
     _angle.data.resize(JOINT_NUMBER);
     _angular_velocity.data.resize(JOINT_NUMBER);
@@ -54,7 +54,7 @@ ExCSimulator::ExCSimulator()
     }
 }
 
-void ExCSimulator::update(std_msgs::Float32MultiArray angular_velocity)
+void ExCArmSimulator::update(std_msgs::Float32MultiArray angular_velocity)
 {
     _angular_velocity = angular_velocity;
 
@@ -66,7 +66,7 @@ void ExCSimulator::update(std_msgs::Float32MultiArray angular_velocity)
     tfBroadcaster();
 }
 
-std_msgs::Float32MultiArray ExCSimulator::getAngle()
+std_msgs::Float32MultiArray ExCArmSimulator::getAngle()
 {
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
@@ -76,7 +76,7 @@ std_msgs::Float32MultiArray ExCSimulator::getAngle()
 }
 
 // Private
-void ExCSimulator::tfBroadcaster()
+void ExCArmSimulator::tfBroadcaster()
 {
     static tf2_ros::TransformBroadcaster br;
     static geometry_msgs::TransformStamped transformStamped;

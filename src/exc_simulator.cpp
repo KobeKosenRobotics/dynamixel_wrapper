@@ -1,6 +1,6 @@
 #include "class_exc_arm_property.hpp"
 #include "class_exc_joint_simulator.hpp"
-#include "class_exc_simulator.hpp"
+#include "class_exc_arm_simulator.hpp"
 
 #include <ros/ros.h>
 
@@ -26,7 +26,7 @@
 #include <Eigen/Dense>
 
 // Global
-ExCSimulator exc_simulator;
+ExCArmSimulator exc_simulator;
 
 // Publisher
 std_msgs::Float32MultiArray angle;
@@ -41,7 +41,7 @@ void angular_velocity_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "ExCSimulator");
+    ros::init(argc, argv, "ExCArmSimulator");
     ros::NodeHandle nh;
     double rate = 100.0;
     ros::Rate loop_rate(rate);
