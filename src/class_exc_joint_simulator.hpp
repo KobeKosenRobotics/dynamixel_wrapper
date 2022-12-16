@@ -45,7 +45,7 @@ class ExCJointSimulator
 void ExCJointSimulator::initialize(int joint)
 {
     _joint = joint;
-    _axis = exc_arm_property.getAxis(_joint);
+    _axis = exc_arm_property.getRotationAxis(_joint);
 }
 
 void ExCJointSimulator::angularVelocity2Angle(double angular_velocity)

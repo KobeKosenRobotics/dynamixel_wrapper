@@ -39,7 +39,7 @@ class ExCArmProperty
 
         Eigen::Matrix<double, 3, JOINT_NUMBER+1> getJointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link);
         double getLink(int joint, int axis);
-        int getAxis(int joint);
+        int getRotationAxis(int joint);
         std::string getJointName(int joint);
 };
 ExCArmProperty exc_arm_property;
@@ -88,7 +88,7 @@ double ExCArmProperty::getLink(int joint, int axis)
     return _link(joint, axis);
 }
 
-int ExCArmProperty::getAxis(int joint)
+int ExCArmProperty::getRotationAxis(int joint)
 {
     if(_rotation_axis(0,joint) == 1) return 0;
     else if(_rotation_axis(1,joint) == 1) return 1;
