@@ -29,14 +29,14 @@
 ExCArmSimulator exc_simulator;
 
 // Publisher
-std_msgs::Float32MultiArray angle;
+std_msgs::Float32MultiArray simulator_angle;
 
 // Subscriber
-std_msgs::Float32MultiArray angular_velocity;
+std_msgs::Float32MultiArray simulator_angular_velocity;
 
-void angular_velocity_cb(std_msgs::Float32MultiArray::ConstPtr msg)
+void simulator_angular_velocity_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
-    angular_velocity = *msg;
+    simulator_angular_velocity = *msg;
 }
 
 int main(int argc, char **argv)
@@ -47,18 +47,18 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(rate);
 
     // Publisher
-    ros::Publisher angle_pub = nh.advertise<std_msgs::Float32MultiArray>("angle", 100);
-    angle.data.resize(JOINT_NUMBER);
+    ros::Publisher simulator_angle_pub = nh.advertise<std_msgs::Float32MultiArray>("simulator_angle", 100);
+    simulator_angle.data.resize(JOINT_NUMBER);
 
     // Subscriber
-    ros::Subscriber angular_velocity_sub = nh.subscribe<std_msgs::Float32MultiArray>("angular_velocity", 100, angular_velocity_cb);
-    angular_velocity.data.resize(JOINT_NUMBER);
+    ros::Subscriber simulator_angular_velocity_sub = nh.subscribe<std_msgs::Float32MultiArray>("simulator_angular_velocity", 100, simulator_angular_velocity_cb);
+    simulator_angular_velocity.data.resize(JOINT_NUMBER);
 
     while(nh.ok())
     {
-        exc_simulator.update(angular_velocity);
+        exc_simulator.update(simulator_angular_velocity);
 
-        angle_pub.publish(exc_simulator.getAngle());
+        simulator_angle_pub.publish(exc_simulator.getAngle());
 
         ros::spinOnce();
         loop_rate.sleep();

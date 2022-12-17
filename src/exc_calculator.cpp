@@ -29,6 +29,8 @@ std_msgs::Float32MultiArray angular_velocity;
 // Subscriber
 std_msgs::Float32MultiArray angle;
 geometry_msgs::Pose target_pose;
+std_msgs::Int16 operating_mode;
+std_msgs::Bool emergency_stop;
 
 void angle_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
@@ -46,6 +48,16 @@ void target_pose_cb(geometry_msgs::Pose::ConstPtr msg)
     angular_velocity.data[5] = target_pose.orientation.z;
 }
 
+void operating_mode_cb(std_msgs::Int16::ConstPtr msg)
+{
+    operating_mode = *msg;
+}
+
+void emergency_stop_cb(std_msgs::Bool::ConstPtr msg)
+{
+    emergency_stop = *msg;
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "ExC_Calculator");
@@ -61,6 +73,8 @@ int main(int argc, char **argv)
     ros::Subscriber angle_sub = nh.subscribe<std_msgs::Float32MultiArray>("angle", 100, angle_cb);
     angle.data.resize(JOINT_NUMBER);
     ros::Subscriber target_pose_sub = nh.subscribe<geometry_msgs::Pose>("target_pose", 10, target_pose_cb);
+    ros::Subscriber operating_mode_sub = nh.subscribe<std_msgs::Int16>("operating_mode", 10, operating_mode_cb);
+    ros::Subscriber emergency_stop_sub = nh.subscribe<std_msgs::Bool>("emergency_stop", 100, emergency_stop_cb);
 
     while(nh.ok())
     {

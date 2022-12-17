@@ -25,6 +25,7 @@
 #include <Eigen/Dense>
 
 const int JOINT_NUMBER = 6;
+const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
 
 class ExCArmProperty
 {
