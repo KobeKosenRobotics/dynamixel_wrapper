@@ -24,33 +24,39 @@
 #include <Eigen/Dense>
 
 // Publisher
-std_msgs::Float32MultiArray angular_velocity;
+std_msgs::Float32MultiArray motor_angular_velocity;
 
 // Subscriber
-std_msgs::Float32MultiArray angle;
+std_msgs::Float32MultiArray sensor_angle;
 geometry_msgs::Pose target_pose;
-std_msgs::Int16 operating_mode;
+std_msgs::Bool simulator_enable;
+std_msgs::Bool exc_enable;
 std_msgs::Bool emergency_stop;
 
-void angle_cb(std_msgs::Float32MultiArray::ConstPtr msg)
+void sensor_angle_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
-    angle = *msg;
+    sensor_angle = *msg;
 }
 
 void target_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
     target_pose = *msg;
-    angular_velocity.data[0] = target_pose.position.x;
-    angular_velocity.data[1] = target_pose.position.y;
-    angular_velocity.data[2] = target_pose.position.z;
-    angular_velocity.data[3] = target_pose.orientation.x;
-    angular_velocity.data[4] = target_pose.orientation.y;
-    angular_velocity.data[5] = target_pose.orientation.z;
+    motor_angular_velocity.data[0] = target_pose.position.x;
+    motor_angular_velocity.data[1] = target_pose.position.y;
+    motor_angular_velocity.data[2] = target_pose.position.z;
+    motor_angular_velocity.data[3] = target_pose.orientation.x;
+    motor_angular_velocity.data[4] = target_pose.orientation.y;
+    motor_angular_velocity.data[5] = target_pose.orientation.z;
 }
 
-void operating_mode_cb(std_msgs::Int16::ConstPtr msg)
+void simulator_enable_cb(std_msgs::Bool::ConstPtr msg)
 {
-    operating_mode = *msg;
+    simulator_enable = *msg;
+}
+
+void exc_enable_cb(std_msgs::Bool::ConstPtr msg)
+{
+    exc_enable = *msg;
 }
 
 void emergency_stop_cb(std_msgs::Bool::ConstPtr msg)
@@ -66,21 +72,22 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(rate);
 
     // Publisher
-    ros::Publisher angular_velocity_pub = nh.advertise<std_msgs::Float32MultiArray>("angular_velocity", 100);
-    angular_velocity.data.resize(JOINT_NUMBER);
+    ros::Publisher motor_angular_velocity_pub = nh.advertise<std_msgs::Float32MultiArray>("motor_angular_velocity", 100);
+    motor_angular_velocity.data.resize(JOINT_NUMBER);
 
     // Subscriber
-    ros::Subscriber angle_sub = nh.subscribe<std_msgs::Float32MultiArray>("angle", 100, angle_cb);
-    angle.data.resize(JOINT_NUMBER);
+    ros::Subscriber sensor_angle_sub = nh.subscribe<std_msgs::Float32MultiArray>("sensor_angle", 100, sensor_angle_cb);
+    sensor_angle.data.resize(JOINT_NUMBER);
     ros::Subscriber target_pose_sub = nh.subscribe<geometry_msgs::Pose>("target_pose", 10, target_pose_cb);
-    ros::Subscriber operating_mode_sub = nh.subscribe<std_msgs::Int16>("operating_mode", 10, operating_mode_cb);
+    ros::Subscriber simulator_enable_sub = nh.subscribe<std_msgs::Bool>("simulator_enable", 10, simulator_enable_cb);
+    ros::Subscriber exc_enable_sub = nh.subscribe<std_msgs::Bool>("exc_enable", 10, exc_enable_cb);
     ros::Subscriber emergency_stop_sub = nh.subscribe<std_msgs::Bool>("emergency_stop", 100, emergency_stop_cb);
 
     while(nh.ok())
     {
         // calculate()
 
-        angular_velocity_pub.publish(angular_velocity);
+        motor_angular_velocity_pub.publish(motor_angular_velocity);
 
         ros::spinOnce();
         loop_rate.sleep();
