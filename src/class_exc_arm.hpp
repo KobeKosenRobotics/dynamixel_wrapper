@@ -43,11 +43,10 @@ class ExCArm
         // Forward Kinematics
         Eigen::Matrix<double, 6, 1> _pose;
         Eigen::Matrix<double, 3, 1> _position, _euler;
-        Eigen::Matrix<double, 3, 3> _rotation_all;
 
         // Inverse Kinematics
         Eigen::Matrix<double, 6, 1> _target_pose;
-        double _proportional_gain = 4.0;
+        double _proportional_gain_exc = 4.0;
 
         // Linear Interpolation
         Eigen::Matrix<double, 6, 1> _target_pose_mid, _target_pose_start;
@@ -58,10 +57,14 @@ class ExCArm
         // ExC (Exponential Coordinates)
 
     public:
+        // Constructor
+        ExCArm();
+
         // Subscribe
         void setMotorEnable(std_msgs::Bool motor_enable);
         void setExCEnable(std_msgs::Bool exc_enable);
         void setEmergencyStop(std_msgs::Bool emergency_stop);
+        void setSensorAngle(std_msgs::Float32MultiArray sensor_angle);
         void setTargetAngle(std_msgs::Float32MultiArray target_angle);
         void setTargetPose(geometry_msgs::Pose target_pose);
             void setTargetPoseStart();
@@ -71,8 +74,17 @@ class ExCArm
         Eigen::Matrix<double, 6, 1> getPose();
             Eigen::Matrix<double, 3, 1> getPosition();
             Eigen::Matrix<double, 3, 1> getEuler();
-};
 
+        // Publish
+        bool getMotorEnable();
+        bool getExCEnable();
+        bool getEmergencyStop();
+        std_msgs::Float32MultiArray getMotorAngularVelocity();
+            void changeMotorAngularVelocity();
+                void setMotorAngularVelocityZero();
+                void getMotorAngularVelocityByAngle();
+                void getMotorAngularVelocityByExC();
+};
 
 // Subscribe
 void ExCArm::setMotorEnable(std_msgs::Bool motor_enable)
@@ -89,6 +101,14 @@ void ExCArm::setExCEnable(std_msgs::Bool exc_enable)
 void ExCArm::setEmergencyStop(std_msgs::Bool emergency_stop)
 {
     _emergency_stop = emergency_stop.data;
+}
+
+void ExCArm::setSensorAngle(std_msgs::Float32MultiArray sensor_angle)
+{
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        _sensor_angle(i,0) = sensor_angle.data[i];
+    }
 }
 
 void ExCArm::setTargetAngle(std_msgs::Float32MultiArray target_angle)
@@ -141,12 +161,92 @@ Eigen::Matrix<double, 6, 1> ExCArm::getPose()
 
 Eigen::Matrix<double, 3, 1> ExCArm::getPosition()
 {
-    _pose << 0.0, 0.0, 0.0;
-    for(int i = JOINT_NUMBER; i > 0; i--)
+    _position = exc_arm_property.getLink(JOINT_NUMBER);
+    for(int i = JOINT_NUMBER-1; i <= 0; i--)
     {
-        _pose = ()
+        _pose = exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*(exc_arm_property.getLink(i) + _position);
     }
 }
-Eigen::Matrix<double, 3, 1> ExCArm::getEuler();
+
+Eigen::Matrix<double, 3, 1> ExCArm::getEuler()
+{
+    Eigen::Matrix<double, 3, 3> rotation_all_;
+    rotation_all_ << exc_arm_property.getRotationMatrix(0, _sensor_angle(0,0));
+    for(int i = 1; i < JOINT_NUMBER; i++)
+    {
+        rotation_all_ = rotation_all_*exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0));
+    }
+
+    // ZYX Euler
+    _euler(1,0) = -asin(rotation_all_(2,0));
+    _euler(0,0) = acos(rotation_all_(0,0)/cos(_euler(1,0)));
+    if(rotation_all_(1,0)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
+    _euler(2,0) = acos(rotation_all_(2,2)/cos(_euler(1,0)));
+    if(rotation_all_(2,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
+
+    return _euler;
+}
+
+// Publish
+bool ExCArm::getMotorEnable()
+{
+    return _motor_enable;
+}
+
+bool ExCArm::getExCEnable()
+{
+    return _exc_enable;
+}
+
+bool ExCArm::getEmergencyStop()
+{
+    return _emergency_stop;
+}
+
+std_msgs::Float32MultiArray ExCArm::getMotorAngularVelocity()
+{
+    changeMotorAngularVelocity();
+
+    std_msgs::Float32MultiArray motor_angular_velocity_;
+    motor_angular_velocity_.data.resize(JOINT_NUMBER);
+
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        motor_angular_velocity_.data[i] = _motor_angular_velocity(i,0);
+    }
+
+    return motor_angular_velocity_;
+}
+
+void ExCArm::changeMotorAngularVelocity()
+{
+    if(_emergency_stop)
+    {
+        setMotorAngularVelocityZero();
+        return;
+    }
+
+    if(_exc_enable)
+    {
+        _motor_angular_velocity = get
+    }
+}
+
+void ExCArm::setMotorAngularVelocityZero()
+{
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        _motor_angular_velocity(i,0) = 0.0;
+    }
+}
+
+void ExCArm::getMotorAngularVelocityByAngle()
+{
+    if(_exc_enable) return;
+
+    _motor_angular_velocity = exc_arm_property.getProportionalGainAngleOperating*(_target_angle - _sensor_angle);
+}
+
+void ExCArm::getAngularVelocityByExC();
 
 #endif
