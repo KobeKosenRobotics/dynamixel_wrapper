@@ -57,9 +57,6 @@ class ExCArm
         // ExC (Exponential Coordinates)
 
     public:
-        // Constructor
-        ExCArm();
-
         // Subscribe
         void setMotorEnable(std_msgs::Bool motor_enable);
         void setExCEnable(std_msgs::Bool exc_enable);
@@ -140,7 +137,7 @@ void ExCArm::setTargetPoseStart()
     _duration_time = getDistance()/_linear_velocity;
 }
 
-void ExCArm::getDistance()
+double ExCArm::getDistance()
 {
     return sqrt(pow((_target_pose(0,0)-_target_pose_start(0,0)),2)+pow((_target_pose(1,0)-_target_pose_start(1,0)),2)+pow((_target_pose(2,0)-_target_pose_start(2,0)),2));
 }
@@ -156,6 +153,7 @@ Eigen::Matrix<double, 6, 1> ExCArm::getPose()
     _pose(3,0) = _euler(0,0);
     _pose(4,0) = _euler(1,0);
     _pose(5,0) = _euler(2,0);
+
     return _pose;
 }
 
@@ -164,8 +162,10 @@ Eigen::Matrix<double, 3, 1> ExCArm::getPosition()
     _position = exc_arm_property.getLink(JOINT_NUMBER);
     for(int i = JOINT_NUMBER-1; i <= 0; i--)
     {
-        _pose = exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*(exc_arm_property.getLink(i) + _position);
+        _position = exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*(exc_arm_property.getLink(i) + _position);
     }
+
+    return _position;
 }
 
 Eigen::Matrix<double, 3, 1> ExCArm::getEuler()
@@ -228,7 +228,13 @@ void ExCArm::changeMotorAngularVelocity()
 
     if(_exc_enable)
     {
-        _motor_angular_velocity = get
+        getMotorAngularVelocityByAngle();
+        return;
+    }
+    else
+    {
+        getMotorAngularVelocityByExC();
+        return;
     }
 }
 
@@ -244,9 +250,12 @@ void ExCArm::getMotorAngularVelocityByAngle()
 {
     if(_exc_enable) return;
 
-    _motor_angular_velocity = exc_arm_property.getProportionalGainAngleOperating*(_target_angle - _sensor_angle);
+    _motor_angular_velocity = exc_arm_property.getProportionalGainAngleOperating()*(_target_angle - _sensor_angle);
 }
 
-void ExCArm::getAngularVelocityByExC();
+void ExCArm::getMotorAngularVelocityByExC()
+{
+    std::cout << "ExC" << std::endl;
+}
 
 #endif

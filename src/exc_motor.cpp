@@ -65,6 +65,7 @@ int main(int argc, char **argv)
     // Motor Declaration
     std::string port_name("/dev/ttyUSB0");
     int baudrate = 1000000;
+    // TODO: motor1, motor2, ..., motor5 -> motor[JOINT_NUMBER]
     dynamixel_wrapper::dynamixel_wrapper_base dxl_base(port_name, baudrate);
     dynamixel_wrapper::dynamixel_wrapper motor0(1, dxl_base, dynamixel_wrapper::PH54_200_S500_R, 1);
     dynamixel_wrapper::dynamixel_wrapper motor1(2, dxl_base, dynamixel_wrapper::H54_200_S500_R, 1);
