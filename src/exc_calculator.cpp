@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     {
         // calculate()
 
-        CSAV_pub.publish(CSAV);
+        CSAV_pub.publish(exc_arm.getMotorAngularVelocity());
 
         ros::spinOnce();
         loop_rate.sleep();

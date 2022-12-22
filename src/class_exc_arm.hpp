@@ -102,6 +102,7 @@ void ExCArm::setEmergencyStop(std_msgs::Bool emergency_stop)
 
 void ExCArm::setSensorAngle(std_msgs::Float32MultiArray sensor_angle)
 {
+    sensor_angle.data.resize(JOINT_NUMBER);
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
         _sensor_angle(i,0) = sensor_angle.data[i];
@@ -110,6 +111,7 @@ void ExCArm::setSensorAngle(std_msgs::Float32MultiArray sensor_angle)
 
 void ExCArm::setTargetAngle(std_msgs::Float32MultiArray target_angle)
 {
+    target_angle.data.resize(JOINT_NUMBER);
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
         _target_angle(i,0) = target_angle.data[i];
@@ -228,12 +230,12 @@ void ExCArm::changeMotorAngularVelocity()
 
     if(_exc_enable)
     {
-        getMotorAngularVelocityByAngle();
+        getMotorAngularVelocityByExC();
         return;
     }
     else
     {
-        getMotorAngularVelocityByExC();
+        getMotorAngularVelocityByAngle();
         return;
     }
 }
@@ -244,6 +246,7 @@ void ExCArm::setMotorAngularVelocityZero()
     {
         _motor_angular_velocity(i,0) = 0.0;
     }
+    std::cout << _motor_angular_velocity << std::endl;
 }
 
 void ExCArm::getMotorAngularVelocityByAngle()
