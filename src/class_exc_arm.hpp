@@ -57,6 +57,9 @@ class ExCArm
         // ExC (Exponential Coordinates)
 
     public:
+        // Debug
+        void print();
+
         // Subscribe
         void setMotorEnable(std_msgs::Bool motor_enable);
         void setExCEnable(std_msgs::Bool exc_enable);
@@ -82,6 +85,17 @@ class ExCArm
                 void getMotorAngularVelocityByAngle();
                 void getMotorAngularVelocityByExC();
 };
+
+// Debug
+void ExCArm::print()
+{
+    std::cout
+
+    << "pose"
+    << std::endl
+    << getPose()
+    << std::endl;
+}
 
 // Subscribe
 void ExCArm::setMotorEnable(std_msgs::Bool motor_enable)
@@ -162,7 +176,7 @@ Eigen::Matrix<double, 6, 1> ExCArm::getPose()
 Eigen::Matrix<double, 3, 1> ExCArm::getPosition()
 {
     _position = exc_arm_property.getLink(JOINT_NUMBER);
-    for(int i = JOINT_NUMBER-1; i <= 0; i--)
+    for(int i = JOINT_NUMBER-1; 0 <= i; i--)
     {
         _position = exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*(exc_arm_property.getLink(i) + _position);
     }
@@ -246,7 +260,6 @@ void ExCArm::setMotorAngularVelocityZero()
     {
         _motor_angular_velocity(i,0) = 0.0;
     }
-    std::cout << _motor_angular_velocity << std::endl;
 }
 
 void ExCArm::getMotorAngularVelocityByAngle()

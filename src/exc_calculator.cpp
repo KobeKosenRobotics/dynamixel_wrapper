@@ -92,6 +92,7 @@ int main(int argc, char **argv)
     while(nh.ok())
     {
         // calculate()
+        exc_arm.print();
 
         CSAV_pub.publish(exc_arm.getMotorAngularVelocity());
 
