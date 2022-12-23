@@ -25,6 +25,7 @@
 #include <Eigen/Dense>
 
 const int JOINT_NUMBER = 6;
+// const int JOINT_NUMBER = 7;
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
 
 class ExCArmProperty
@@ -33,18 +34,29 @@ class ExCArmProperty
         Eigen::Matrix<double, JOINT_NUMBER+1, 3> _link;
         Eigen::Matrix<double, 3, JOINT_NUMBER+1> _joint_position;
         Eigen::Matrix<int, 3, JOINT_NUMBER+1> _translation_axis, _rotation_axis;
+        Eigen::Matrix<double, 4, 4> _gst_zero;
         Eigen::Matrix<std::string, JOINT_NUMBER+1, 1> _joint_name;
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
 
     public:
         ExCArmProperty();
 
-        Eigen::Matrix<double, 3, JOINT_NUMBER+1> getJointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link);
+        Eigen::Matrix<double, 3, JOINT_NUMBER+1> link2JointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link);
         Eigen::Matrix<double, 3, 1> getLink(int joint);
         double getLink(int joint, int axis);
         int getRotationAxis(int joint);
         Eigen::Matrix<double, 3, 3> getRotationMatrix(int joint, double angle);
+
+        // ExC Joint
+        Eigen::Matrix<double, 3, 1> getQ(int joint);
+        Eigen::Matrix<double, 3, 1> getV(int joint);
+        Eigen::Matrix<double, 3, 1> getW(int joint);
+        Eigen::Matrix<double, 4, 4> getGstZero();
+
+        // Simulator
         std::string getJointName(int joint);
+
+        // Angle Operating
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> getProportionalGainAngleOperating();
 };
 ExCArmProperty exc_arm_property;
@@ -59,20 +71,44 @@ ExCArmProperty::ExCArmProperty()
       0.0, 0.0,   0.0,
       0.0, 0.0, 123.0,
       0.0, 0.0,   0.0;
+    // _link <<
+    //   0.0, 0.0, 159.0,
+    //   0.0, 0.0,   0.0,
+    //  30.0, 0.0, 264.0,
+    // -30.0, 0.0, 258.0,
+    //   0.0, 0.0,   0.0,
+    //   0.0, 0.0, 123.0,
+    //   0.0, 0.0,   0.0,
+    //   0.0, 0.0, 100.0;
 
-    _joint_position = getJointPosition(_link);
+    _joint_position = link2JointPosition(_link);
 
     _translation_axis <<
     0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0;
+    // _translation_axis <<
+    // 0, 0, 0, 0, 0, 0, 0, 0,
+    // 0, 0, 0, 0, 0, 0, 0, 0,
+    // 0, 0, 0, 0, 0, 0, 0, 0;
 
     _rotation_axis <<
     0, 0, 0, 0, 0, 0, 0,
     0, 1, 1, 0, 1, 0, 0,
     1, 0, 0, 1, 0, 1, 0;
+    // _rotation_axis <<
+    // 0, 0, 0, 0, 0, 0, 0, 0,
+    // 0, 1, 1, 0, 1, 0, 1, 0,
+    // 1, 0, 0, 1, 0, 1, 0, 0;
+
+    _gst_zero <<
+    1.0, 0.0, 0.0, _joint_position(0, JOINT_NUMBER),
+    0.0, 1.0, 0.0, _joint_position(1, JOINT_NUMBER),
+    0.0, 0.0, 1.0, _joint_position(2, JOINT_NUMBER),
+    0.0, 0.0, 0.0,                              1.0;
 
     _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6";
+    // _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7";
 
     _proportional_gain_angle_operating <<
     1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -81,9 +117,17 @@ ExCArmProperty::ExCArmProperty()
     0.0, 0.0, 0.0, 2.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 2.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
+    // _proportional_gain_angle_operating <<
+    // 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    // 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    // 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+    // 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
+    // 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0,
+    // 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0,
+    // 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
 }
 
-Eigen::Matrix<double, 3, JOINT_NUMBER+1> ExCArmProperty::getJointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link)
+Eigen::Matrix<double, 3, JOINT_NUMBER+1> ExCArmProperty::link2JointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link)
 {
     for(int column = 0; column < 3; column++)
     {
@@ -149,6 +193,33 @@ Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrix(int joint, double 
         0.0, 0.0, 1.0;
     }
     return rotation_matrix_;
+}
+
+// ExC Joint
+Eigen::Matrix<double, 3, 1> ExCArmProperty::getQ(int joint)
+{
+    Eigen::Matrix<double, 3, 1> q_;
+    q_ << _joint_position(0, joint), _joint_position(1, joint), _joint_position(2, joint);
+    return q_;
+}
+
+Eigen::Matrix<double, 3, 1> ExCArmProperty::getV(int joint)
+{
+    Eigen::Matrix<double, 3, 1> v_;
+    v_ << _translation_axis(0, joint), _translation_axis(1, joint), _translation_axis(2, joint);
+    return v_;
+}
+
+Eigen::Matrix<double, 3, 1> ExCArmProperty::getW(int joint)
+{
+    Eigen::Matrix<double, 3, 1> w_;
+    w_ << _rotation_axis(0, joint), _rotation_axis(1, joint), _rotation_axis(2, joint);
+    return w_;
+}
+
+Eigen::Matrix<double, 4, 4> ExCArmProperty::getGstZero()
+{
+    return _gst_zero;
 }
 
 std::string ExCArmProperty::getJointName(int joint)

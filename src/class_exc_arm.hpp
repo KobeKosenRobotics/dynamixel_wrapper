@@ -2,6 +2,7 @@
 #define CLASS_EXC_ARM_HPP
 
 #include "class_exc_arm_property.hpp"
+#include "class_exc_joint.hpp"
 
 #include <ros/ros.h>
 
@@ -84,6 +85,8 @@ class ExCArm
                 void setMotorAngularVelocityZero();
                 void getMotorAngularVelocityByAngle();
                 void getMotorAngularVelocityByExC();
+                    // Eigen::Matrix<double, 6, JOINT_NUMBER> getExCJacobian();
+                    //     Eigen::<double, 4, 4> adjoint(Eigen::Matrix<double, 4, 4> matrix);
 };
 
 // Debug
