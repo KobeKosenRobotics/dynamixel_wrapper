@@ -89,15 +89,6 @@ int main(int argc, char **argv)
     ros::Subscriber exc_enable_sub = nh.subscribe<std_msgs::Bool>("exc_enable", 10, exc_enable_cb);
     ros::Subscriber emergency_stop_sub = nh.subscribe<std_msgs::Bool>("emergency_stop", 100, emergency_stop_cb);
 
-    // ExCJoint test;
-    // for(int i = 0; i < JOINT_NUMBER; i++)
-    // {
-    //     test.setJoint(i);
-
-    //     std::cout << test.getExpXiHatTheta(1.0) << std::endl;
-    // }
-    // std::cout << exc_arm_property.getGstZero() << std::endl;
-
     while(nh.ok())
     {
         exc_arm.print();

@@ -47,19 +47,19 @@ class ExCArm
         // Forward Kinematics
         Eigen::Matrix<double, 6, 1> _pose;
         Eigen::Matrix<double, 3, 1> _position, _euler;
-        Eigen::Matrix<double, 3, 3> _rotation_all;    // _rotation_euler;
+        Eigen::Matrix<double, 3, 3> _rotation_all;
 
         // Inverse Kinematics
         Eigen::Matrix<double, 6, 1> _target_pose;
-        double _proportional_gain_exc = 0.1;
 
         // Linear Interpolation
-        Eigen::Matrix<double, 6, 1> /*_target_pose_mid,*/ _target_pose_start;
+        Eigen::Matrix<double, 6, 1> _target_pose_start;
         geometry_msgs::Pose _target_pose_old;
         ros::Time _time_start_move;
         double _midpoint, _duration_time, _linear_velocity = 50;    // _liner_velocity[mm/s]
 
         // ExC (Exponential Coordinates)
+        double _proportional_gain_exc = 10.0;
         Eigen::Matrix<double, 6, JOINT_NUMBER> _exc_jacobian;
         Eigen::Matrix<double, 6, JOINT_NUMBER> _exc_jacobian_body;
         Eigen::Matrix<double, 6, 6> _transformation_matrix;
@@ -145,10 +145,10 @@ void ExCArm::print()
     // << std::endl
     // << getMidTargetPoseLinearInterpolation()
 
-    << std::endl
-    << "motor angular velocity"
-    << std::endl
-    << _motor_angular_velocity
+    // << std::endl
+    // << "motor angular velocity"
+    // << std::endl
+    // << _motor_angular_velocity
 
     // << std::endl
     // << "exc jacobian"
@@ -233,6 +233,26 @@ Eigen::Matrix<double, 6, 1> ExCArm::getPose()
     _pose(4,0) = _euler(1,0);
     _pose(5,0) = _euler(2,0);
 
+    static tf2_ros::TransformBroadcaster br;
+    static geometry_msgs::TransformStamped transformStamped;
+    static tf2::Quaternion q;
+
+    // Joint 0
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "arm_base_link";
+    transformStamped.child_frame_id = "pose";
+    transformStamped.transform.translation.x = _pose(0,0)/1000.0;
+    transformStamped.transform.translation.y = _pose(1,0)/1000.0;
+    transformStamped.transform.translation.z = _pose(2,0)/1000.0;
+
+    q.setRPY(_euler(2,0), _euler(1,0), _euler(0,0));
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
     return _pose;
 }
 
@@ -241,7 +261,7 @@ Eigen::Matrix<double, 3, 1> ExCArm::getPosition()
     _position = exc_arm_property.getLink(JOINT_NUMBER);
     for(int i = JOINT_NUMBER-1; 0 <= i; i--)
     {
-        _position = exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*(exc_arm_property.getLink(i) + _position);
+        _position = exc_arm_property.getLink(i) + exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*_position;
     }
 
     return _position;
@@ -444,8 +464,8 @@ Eigen::Matrix<double, 6, 6> ExCArm::getTransformationMatrix()
     getTransformationEuler();
 
     _transformation_matrix <<
-    _rotation_all,                 _zero,
-            _zero, _transformation_euler;
+    _rotation_all.transpose(),                 _zero,
+                        _zero, _transformation_euler;
 
     return _transformation_matrix;
 }
@@ -453,9 +473,9 @@ Eigen::Matrix<double, 6, 6> ExCArm::getTransformationMatrix()
 Eigen::Matrix<double, 3, 3> ExCArm::getTransformationEuler()
 {
     _transformation_euler <<
-    0.0, -sin(_euler(0,0)), cos(_euler(1,0))*cos(_euler(0,0)),
-    0.0,  cos(_euler(0,0)), cos(_euler(1,0))*sin(_euler(0,0)),
-    1.0,               0.0,                 -sin(_euler(1,0));
+                    -sin(_euler(1,0)),               0.0, 1.0,
+    cos(_euler(1,0))*sin(_euler(2,0)),  cos(_euler(2,0)), 0.0,
+    cos(_euler(2,0))*cos(_euler(1,0)), -sin(_euler(2,0)), 0.0;
 
     return _transformation_euler;
 }

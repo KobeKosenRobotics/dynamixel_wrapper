@@ -33,7 +33,7 @@ class ExCArmProperty
     private:
         Eigen::Matrix<double, JOINT_NUMBER+1, 3> _link;
         Eigen::Matrix<double, 3, JOINT_NUMBER+1> _joint_position;
-        Eigen::Matrix<int, 3, JOINT_NUMBER+1> _translation_axis, _rotation_axis;
+        Eigen::Matrix<double, 3, JOINT_NUMBER+1> _translation_axis, _rotation_axis;
         Eigen::Matrix<double, 4, 4> _gst_zero;
         Eigen::Matrix<std::string, JOINT_NUMBER+1, 1> _joint_name;
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
@@ -83,19 +83,20 @@ ExCArmProperty::ExCArmProperty()
 
     _joint_position = link2JointPosition(_link);
 
-    _translation_axis <<
-    0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0;
+    _translation_axis = _link.transpose();
+    // _translation_axis <<
+    // 0, 0, 0, 0, 0, 0, 0,
+    // 0, 0, 0, 0, 0, 0, 0,
+    // 0, 0, 0, 0, 0, 0, 0;
     // _translation_axis <<
     // 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 0, 0, 0, 0, 0, 0, 0;
 
     _rotation_axis <<
-    0, 0, 0, 0, 0, 0, 0,
-    0, 1, 1, 0, 1, 0, 0,
-    1, 0, 0, 1, 0, 1, 0;
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0,
+    1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0;
     // _rotation_axis <<
     // 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 1, 1, 0, 1, 0, 1, 0,
