@@ -41,7 +41,7 @@ class ExCJoint
 
     public:
         ExCJoint();
-        ExCJoint(int joint);
+        void setJoint(int joint);
 
         Eigen::Matrix<double, 4, 4> getExpXiHatTheta(double angle);
             Eigen::Matrix<double, 3, 3> getExpWHatTheta(double angle);
@@ -49,13 +49,15 @@ class ExCJoint
                     double getCosTheta(double angle);
                     double getSinTheta(double angle);
         Eigen::Matrix<double, 6, 1> getXi();
+
+        // void test();
 };
 
 // Constructor
 ExCJoint::ExCJoint()
 {}
 
-ExCJoint::ExCJoint(int joint)
+void ExCJoint::setJoint(int joint)
 {
     _joint = joint;
 
@@ -78,25 +80,29 @@ Eigen::Matrix<double, 4, 4> ExCJoint::getExpXiHatTheta(double angle)
 
     _position_exp_xi_hat_theta = (_eye3-_exp_w_hat_theta)*_w.cross(_v) + _w*_w.transpose()*_v*angle;
 
-    _exp_xi_hat_theta(0,0) = _exp_w_hat_theta(0,0);
-    _exp_xi_hat_theta(0,1) = _exp_w_hat_theta(0,1);
-    _exp_xi_hat_theta(0,2) = _exp_w_hat_theta(0,2);
-    _exp_xi_hat_theta(0,3) = _position_exp_xi_hat_theta(0,0);
+    _exp_xi_hat_theta <<
+    _exp_w_hat_theta, _position_exp_xi_hat_theta,
+    0.0, 0.0, 0.0, 1.0;
 
-    _exp_xi_hat_theta(1,0) = _exp_w_hat_theta(1,0);
-    _exp_xi_hat_theta(1,1) = _exp_w_hat_theta(1,1);
-    _exp_xi_hat_theta(1,2) = _exp_w_hat_theta(1,2);
-    _exp_xi_hat_theta(1,3) = _position_exp_xi_hat_theta(1,0);
+    // _exp_xi_hat_theta(0,0) = _exp_w_hat_theta(0,0);
+    // _exp_xi_hat_theta(0,1) = _exp_w_hat_theta(0,1);
+    // _exp_xi_hat_theta(0,2) = _exp_w_hat_theta(0,2);
+    // _exp_xi_hat_theta(0,3) = _position_exp_xi_hat_theta(0,0);
 
-    _exp_xi_hat_theta(2,0) = _exp_w_hat_theta(2,0);
-    _exp_xi_hat_theta(2,1) = _exp_w_hat_theta(2,1);
-    _exp_xi_hat_theta(2,2) = _exp_w_hat_theta(2,2);
-    _exp_xi_hat_theta(2,3) = _position_exp_xi_hat_theta(2,0);
+    // _exp_xi_hat_theta(1,0) = _exp_w_hat_theta(1,0);
+    // _exp_xi_hat_theta(1,1) = _exp_w_hat_theta(1,1);
+    // _exp_xi_hat_theta(1,2) = _exp_w_hat_theta(1,2);
+    // _exp_xi_hat_theta(1,3) = _position_exp_xi_hat_theta(1,0);
 
-    _exp_xi_hat_theta(3,0) = 0.0;
-    _exp_xi_hat_theta(3,1) = 0.0;
-    _exp_xi_hat_theta(3,2) = 0.0;
-    _exp_xi_hat_theta(3,3) = 1.0;
+    // _exp_xi_hat_theta(2,0) = _exp_w_hat_theta(2,0);
+    // _exp_xi_hat_theta(2,1) = _exp_w_hat_theta(2,1);
+    // _exp_xi_hat_theta(2,2) = _exp_w_hat_theta(2,2);
+    // _exp_xi_hat_theta(2,3) = _position_exp_xi_hat_theta(2,0);
+
+    // _exp_xi_hat_theta(3,0) = 0.0;
+    // _exp_xi_hat_theta(3,1) = 0.0;
+    // _exp_xi_hat_theta(3,2) = 0.0;
+    // _exp_xi_hat_theta(3,3) = 1.0;
 
     return _exp_xi_hat_theta;
 }
@@ -138,16 +144,51 @@ double ExCJoint::getSinTheta(double angle)
 
 Eigen::Matrix<double, 6, 1> ExCJoint::getXi()
 {
-    _position_xi = (-1)*_w.cross(_q);
+    // _position_xi = (-1)*_w.cross(_q);
 
-    _xi(0,0) = _position_xi(0,0);
-    _xi(1,0) = _position_xi(1,0);
-    _xi(2,0) = _position_xi(2,0);
-    _xi(3,0) = _w(0,0);
-    _xi(4,0) = _w(1,0);
-    _xi(5,0) = _w(2,0);
+    _xi <<
+    -_w.cross(_q),
+    _w;
+
+    // _xi(0,0) = _position_xi(0,0);
+    // _xi(1,0) = _position_xi(1,0);
+    // _xi(2,0) = _position_xi(2,0);
+    // _xi(3,0) = _w(0,0);
+    // _xi(4,0) = _w(1,0);
+    // _xi(5,0) = _w(2,0);
 
     return _xi;
 }
+
+// void ExCJoint::test()
+// {
+//     Eigen::Matrix<double, 3, 3> A;
+//     Eigen::Matrix<double, 3, 1> B;
+//     Eigen::Matrix<double, 1, 3> C;
+//     Eigen::Matrix<double, 1, 1> D;
+//     Eigen::Matrix<double, 4, 4> E;
+
+//     A <<
+//     1, 1, 1,
+//     1, 1, 1,
+//     1, 1, 1;
+
+//     B <<
+//     2,
+//     2,
+//     2;
+
+//     C <<
+//     3, 3, 3;
+
+//     D <<
+//     4;
+
+//     E <<
+//     A, B,
+//     C, D;
+
+//     std::cout << E << std::endl;
+// }
 
 #endif

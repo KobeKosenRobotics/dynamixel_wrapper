@@ -30,6 +30,9 @@
 class ExCArm
 {
     private:
+        // Joint
+        ExCJoint exc_joint[JOINT_NUMBER];
+
         // Bool
         bool _motor_enable = false;
         bool _exc_enable = false, _exc_enable_old = false;
@@ -44,20 +47,31 @@ class ExCArm
         // Forward Kinematics
         Eigen::Matrix<double, 6, 1> _pose;
         Eigen::Matrix<double, 3, 1> _position, _euler;
+        Eigen::Matrix<double, 3, 3> _rotation_all;    // _rotation_euler;
 
         // Inverse Kinematics
         Eigen::Matrix<double, 6, 1> _target_pose;
         double _proportional_gain_exc = 4.0;
 
         // Linear Interpolation
-        Eigen::Matrix<double, 6, 1> _target_pose_mid, _target_pose_start;
+        Eigen::Matrix<double, 6, 1> /*_target_pose_mid,*/ _target_pose_start;
         geometry_msgs::Pose _target_pose_old;
         ros::Time _time_start_move;
         double _midpoint, _duration_time, _linear_velocity = 50;    // _liner_velocity[mm/s]
 
         // ExC (Exponential Coordinates)
+        Eigen::Matrix<double, 6, JOINT_NUMBER> _exc_jacobian;
+        Eigen::Matrix<double, 6, JOINT_NUMBER> _exc_jacobian_body;
+        Eigen::Matrix<double, 6, 6> _transformation_matrix;
+        Eigen::Matrix<double, 3, 3> _transformation_euler;
+
+        // Other
+        Eigen::Matrix<double, 3, 3> _zero;
 
     public:
+        // Constructor
+        ExCArm();
+
         // Debug
         void print();
 
@@ -76,6 +90,17 @@ class ExCArm
             Eigen::Matrix<double, 3, 1> getPosition();
             Eigen::Matrix<double, 3, 1> getEuler();
 
+        // Linear Interpolation
+        Eigen::Matrix<double, 6, 1> getMidTargetPoseLinearInterpolation();
+
+        // ExC
+        Eigen::Matrix<double, 6, JOINT_NUMBER> getExCJacobian();
+        Eigen::Matrix<double, 6, JOINT_NUMBER> getExCJacobianBody();
+            Eigen::Matrix<double, 6, 6> adjoint(Eigen::Matrix<double, 4, 4> matrix);
+            Eigen::Matrix<double, 3, 3> hat(Eigen::Matrix<double, 3, 1> vector);
+        Eigen::Matrix<double, 6, 6> getTransformationMatrix();
+            Eigen::Matrix<double, 3, 3> getTransformationEuler();
+
         // Publish
         bool getMotorEnable();
         bool getExCEnable();
@@ -85,18 +110,50 @@ class ExCArm
                 void setMotorAngularVelocityZero();
                 void getMotorAngularVelocityByAngle();
                 void getMotorAngularVelocityByExC();
-                    // Eigen::Matrix<double, 6, JOINT_NUMBER> getExCJacobian();
-                    //     Eigen::<double, 4, 4> adjoint(Eigen::Matrix<double, 4, 4> matrix);
+
+
 };
+
+// Constructor
+ExCArm::ExCArm()
+{
+    _zero <<
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0;
+
+    // ExC Joint Set Joint
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        exc_joint[i].setJoint(i);
+    }
+}
 
 // Debug
 void ExCArm::print()
 {
     std::cout
 
+    << std::endl
     << "pose"
     << std::endl
     << getPose()
+
+    // << std::endl
+    // << "mid target pose"
+    // << std::endl
+    // << getMidTargetPoseLinearInterpolation()
+
+    // << std::endl
+    // << "motor angular velocity"
+    // << std::endl
+    // << _motor_angular_velocity
+
+    << std::endl
+    << "exc jacobian body"
+    << std::endl
+    << _exc_jacobian_body
+
     << std::endl;
 }
 
@@ -147,6 +204,8 @@ void ExCArm::setTargetPose(geometry_msgs::Pose target_pose)
         _target_pose(5,0) = target_pose.orientation.z;
         setTargetPoseStart();
     }
+
+    _target_pose_old = target_pose;
 }
 
 void ExCArm::setTargetPoseStart()
@@ -189,21 +248,27 @@ Eigen::Matrix<double, 3, 1> ExCArm::getPosition()
 
 Eigen::Matrix<double, 3, 1> ExCArm::getEuler()
 {
-    Eigen::Matrix<double, 3, 3> rotation_all_;
-    rotation_all_ << exc_arm_property.getRotationMatrix(0, _sensor_angle(0,0));
+    _rotation_all << exc_arm_property.getRotationMatrix(0, _sensor_angle(0,0));
     for(int i = 1; i < JOINT_NUMBER; i++)
     {
-        rotation_all_ = rotation_all_*exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0));
+        _rotation_all = _rotation_all*exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0));
     }
 
     // ZYX Euler
-    _euler(1,0) = -asin(rotation_all_(2,0));
-    _euler(0,0) = acos(rotation_all_(0,0)/cos(_euler(1,0)));
-    if(rotation_all_(1,0)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
-    _euler(2,0) = acos(rotation_all_(2,2)/cos(_euler(1,0)));
-    if(rotation_all_(2,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
+    _euler(1,0) = -asin(_rotation_all(2,0));
+    _euler(0,0) = acos(_rotation_all(0,0)/cos(_euler(1,0)));
+    if(_rotation_all(1,0)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
+    _euler(2,0) = acos(_rotation_all(2,2)/cos(_euler(1,0)));
+    if(_rotation_all(2,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
 
     return _euler;
+}
+
+// Linear Interpolation
+Eigen::Matrix<double, 6, 1> ExCArm::getMidTargetPoseLinearInterpolation()
+{
+    _midpoint = std::min(std::max((ros::Time::now()-_time_start_move).toSec()/_duration_time, 0.0), 1.0);
+    return _midpoint*_target_pose +(1-_midpoint)*_target_pose_start;
 }
 
 // Publish
@@ -274,7 +339,94 @@ void ExCArm::getMotorAngularVelocityByAngle()
 
 void ExCArm::getMotorAngularVelocityByExC()
 {
-    std::cout << "ExC" << std::endl;
+    _motor_angular_velocity = _proportional_gain_exc*getExCJacobian().inverse()*(getMidTargetPoseLinearInterpolation()-getPose());
+}
+
+Eigen::Matrix<double, 6, JOINT_NUMBER> ExCArm::getExCJacobian()
+{
+    _exc_jacobian = getTransformationMatrix().inverse()*getExCJacobianBody();
+
+    return _exc_jacobian;
+}
+
+Eigen::Matrix<double, 6, JOINT_NUMBER> ExCArm::getExCJacobianBody()
+{
+    Eigen::Matrix<double, 6, 1> xi_dagger_[JOINT_NUMBER];
+
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        Eigen::Matrix<double, 4, 4> matrix_;
+        matrix_ = exc_arm_property.getGstZero();
+
+        for(int j = JOINT_NUMBER-1; i <= j ; j--)
+        {
+            matrix_ = exc_joint[j].getExpXiHatTheta(_sensor_angle(j,0))*matrix_;
+        }
+
+        xi_dagger_[i] = adjoint(matrix_)*exc_joint[i].getXi();
+
+        _exc_jacobian_body(i,0) = xi_dagger_[i](0,0);
+        for(int k = 0; k < 6; k++)
+        {
+            _exc_jacobian_body(k,i) = xi_dagger_[i](k,0);
+        }
+    }
+
+    return _exc_jacobian_body;
+}
+
+Eigen::Matrix<double, 6, 6> ExCArm::adjoint(Eigen::Matrix<double, 4, 4> matrix)
+{
+    Eigen::Matrix<double, 3, 3> rotation_matrix_;
+    Eigen::Matrix<double, 3, 1> position_;
+    Eigen::Matrix<double, 6, 6> adjoint_matrix_;
+
+    rotation_matrix_ <<
+    matrix(0,0), matrix(0,1), matrix(0,2),
+    matrix(1,0), matrix(1,1), matrix(1,2),
+    matrix(2,0), matrix(2,1), matrix(2,2);
+
+    position_ <<
+    matrix(0,3),
+    matrix(1,3),
+    matrix(2,3);
+
+    adjoint_matrix_ <<
+    rotation_matrix_, hat(position_)*rotation_matrix_,
+               _zero,                rotation_matrix_;
+
+    return adjoint_matrix_;
+}
+
+Eigen::Matrix<double, 3, 3> ExCArm::hat(Eigen::Matrix<double, 3, 1> vector)
+{
+    Eigen::Matrix<double, 3, 3> hat_vector_;
+
+    hat_vector_ <<
+             0.0, -vector(2,0),  vector(1,0),
+     vector(2,0),          0.0, -vector(0,0),
+    -vector(1,0),  vector(0,0),          0.0;
+
+    return hat_vector_;
+}
+
+Eigen::Matrix<double, 6, 6> ExCArm::getTransformationMatrix()
+{
+    _transformation_matrix <<
+    _rotation_all,                 _zero,
+            _zero, _transformation_euler;
+
+    return _transformation_matrix;
+}
+
+Eigen::Matrix<double, 3, 3> ExCArm::getTransformationEuler()
+{
+    _transformation_euler <<
+    0.0, -sin(_euler(0,0)), cos(_euler(1,0))*cos(_euler(0,0)),
+    0.0,  cos(_euler(0,0)), cos(_euler(1,0))*sin(_euler(0,0)),
+    1.0,               0.0,                 -sin(_euler(1,0));
+
+    return _transformation_euler;
 }
 
 #endif
