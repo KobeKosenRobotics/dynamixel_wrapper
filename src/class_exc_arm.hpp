@@ -51,7 +51,7 @@ class ExCArm
 
         // Inverse Kinematics
         Eigen::Matrix<double, 6, 1> _target_pose;
-        double _proportional_gain_exc = 4.0;
+        double _proportional_gain_exc = 0.1;
 
         // Linear Interpolation
         Eigen::Matrix<double, 6, 1> /*_target_pose_mid,*/ _target_pose_start;
@@ -97,6 +97,7 @@ class ExCArm
         Eigen::Matrix<double, 6, JOINT_NUMBER> getExCJacobian();
         Eigen::Matrix<double, 6, JOINT_NUMBER> getExCJacobianBody();
             Eigen::Matrix<double, 6, 6> adjoint(Eigen::Matrix<double, 4, 4> matrix);
+            Eigen::Matrix<double, 6, 6> adjointInverse(Eigen::Matrix<double, 4, 4> matrix);
             Eigen::Matrix<double, 3, 3> hat(Eigen::Matrix<double, 3, 1> vector);
         Eigen::Matrix<double, 6, 6> getTransformationMatrix();
             Eigen::Matrix<double, 3, 3> getTransformationEuler();
@@ -144,15 +145,15 @@ void ExCArm::print()
     // << std::endl
     // << getMidTargetPoseLinearInterpolation()
 
-    // << std::endl
-    // << "motor angular velocity"
-    // << std::endl
-    // << _motor_angular_velocity
+    << std::endl
+    << "motor angular velocity"
+    << std::endl
+    << _motor_angular_velocity
 
-    << std::endl
-    << "exc jacobian body"
-    << std::endl
-    << _exc_jacobian_body
+    // << std::endl
+    // << "exc jacobian"
+    // << std::endl
+    // << getExCJacobian()
 
     << std::endl;
 }
@@ -261,6 +262,11 @@ Eigen::Matrix<double, 3, 1> ExCArm::getEuler()
     _euler(2,0) = acos(_rotation_all(2,2)/cos(_euler(1,0)));
     if(_rotation_all(2,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
 
+    for(int i = 0; i < 3; i++)
+    {
+        if(isnan(_euler(i,0))) _euler(i,0) = 0.0;
+    }
+
     return _euler;
 }
 
@@ -339,12 +345,12 @@ void ExCArm::getMotorAngularVelocityByAngle()
 
 void ExCArm::getMotorAngularVelocityByExC()
 {
-    _motor_angular_velocity = _proportional_gain_exc*getExCJacobian().inverse()*(getMidTargetPoseLinearInterpolation()-getPose());
+    _motor_angular_velocity = _proportional_gain_exc*(getExCJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
 }
 
 Eigen::Matrix<double, 6, JOINT_NUMBER> ExCArm::getExCJacobian()
 {
-    _exc_jacobian = getTransformationMatrix().inverse()*getExCJacobianBody();
+    _exc_jacobian = (getTransformationMatrix().inverse())*getExCJacobianBody();
 
     return _exc_jacobian;
 }
@@ -363,7 +369,7 @@ Eigen::Matrix<double, 6, JOINT_NUMBER> ExCArm::getExCJacobianBody()
             matrix_ = exc_joint[j].getExpXiHatTheta(_sensor_angle(j,0))*matrix_;
         }
 
-        xi_dagger_[i] = adjoint(matrix_)*exc_joint[i].getXi();
+        xi_dagger_[i] = adjointInverse(matrix_)*exc_joint[i].getXi();
 
         _exc_jacobian_body(i,0) = xi_dagger_[i](0,0);
         for(int k = 0; k < 6; k++)
@@ -398,6 +404,29 @@ Eigen::Matrix<double, 6, 6> ExCArm::adjoint(Eigen::Matrix<double, 4, 4> matrix)
     return adjoint_matrix_;
 }
 
+Eigen::Matrix<double, 6, 6> ExCArm::adjointInverse(Eigen::Matrix<double, 4, 4> matrix)
+{
+    Eigen::Matrix<double, 3, 3> rotation_matrix_;
+    Eigen::Matrix<double, 3, 1> position_;
+    Eigen::Matrix<double, 6, 6> adjoint_inverse_matrix_;
+
+    rotation_matrix_ <<
+    matrix(0,0), matrix(0,1), matrix(0,2),
+    matrix(1,0), matrix(1,1), matrix(1,2),
+    matrix(2,0), matrix(2,1), matrix(2,2);
+
+    position_ <<
+    matrix(0,3),
+    matrix(1,3),
+    matrix(2,3);
+
+    adjoint_inverse_matrix_ <<
+    rotation_matrix_.transpose(), -rotation_matrix_.transpose()*hat(position_),
+                           _zero,                 rotation_matrix_.transpose();
+
+    return adjoint_inverse_matrix_;
+}
+
 Eigen::Matrix<double, 3, 3> ExCArm::hat(Eigen::Matrix<double, 3, 1> vector)
 {
     Eigen::Matrix<double, 3, 3> hat_vector_;
@@ -412,6 +441,8 @@ Eigen::Matrix<double, 3, 3> ExCArm::hat(Eigen::Matrix<double, 3, 1> vector)
 
 Eigen::Matrix<double, 6, 6> ExCArm::getTransformationMatrix()
 {
+    getTransformationEuler();
+
     _transformation_matrix <<
     _rotation_all,                 _zero,
             _zero, _transformation_euler;

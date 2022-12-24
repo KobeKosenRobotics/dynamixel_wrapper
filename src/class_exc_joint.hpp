@@ -78,7 +78,7 @@ Eigen::Matrix<double, 4, 4> ExCJoint::getExpXiHatTheta(double angle)
     getVTheta(angle);
     getExpWHatTheta(angle);
 
-    _position_exp_xi_hat_theta = (_eye3-_exp_w_hat_theta)*_w.cross(_v) + _w*_w.transpose()*_v*angle;
+    _position_exp_xi_hat_theta = (_eye3-_exp_w_hat_theta)*(_w.cross(_v)) + _w*_w.transpose()*_v*angle;
 
     _exp_xi_hat_theta <<
     _exp_w_hat_theta, _position_exp_xi_hat_theta,
@@ -113,12 +113,12 @@ Eigen::Matrix<double, 3, 3> ExCJoint::getExpWHatTheta(double angle)
     _exp_w_hat_theta(0,1) = _w(0,0)*_w(1,0)*_v_theta - _w(2,0)*_sin_theta;
     _exp_w_hat_theta(0,2) = _w(0,0)*_w(2,0)*_v_theta + _w(1,0)*_sin_theta;
 
-    _exp_w_hat_theta(0,0) = _w(0,0)*_w(1,0)*_v_theta + _w(2,0)*_sin_theta;
+    _exp_w_hat_theta(1,0) = _w(0,0)*_w(1,0)*_v_theta + _w(2,0)*_sin_theta;
     _exp_w_hat_theta(1,1) = pow(_w(1,0),2)*_v_theta + _cos_theta;
-    _exp_w_hat_theta(2,2) = _w(1,0)*_w(2,0)*_v_theta - _w(0,0)*_sin_theta;
+    _exp_w_hat_theta(1,2) = _w(1,0)*_w(2,0)*_v_theta - _w(0,0)*_sin_theta;
 
-    _exp_w_hat_theta(0,0) = _w(0,0)*_w(2,0)*_v_theta - _w(1,0)*_sin_theta;
-    _exp_w_hat_theta(1,1) = _w(1,0)*_w(2,0)*_v_theta + _w(0,0)*_sin_theta;
+    _exp_w_hat_theta(2,0) = _w(0,0)*_w(2,0)*_v_theta - _w(1,0)*_sin_theta;
+    _exp_w_hat_theta(2,1) = _w(1,0)*_w(2,0)*_v_theta + _w(0,0)*_sin_theta;
     _exp_w_hat_theta(2,2) = pow(_w(2,0),2)*_v_theta + _cos_theta;
 
     return _exp_w_hat_theta;
