@@ -60,8 +60,9 @@ void ExCJoint::setJoint(int joint)
     _joint = joint;
 
     _q = exc_arm_property.getQ(joint);
-    _v = exc_arm_property.getV(joint);
+    // _v = exc_arm_property.getV(joint);
     _w = exc_arm_property.getW(joint);
+    _v = -_w.cross(_q);
 
     _eye3 <<
     1.0, 0.0, 0.0,
@@ -123,7 +124,7 @@ double ExCJoint::getSinTheta(double angle)
 Eigen::Matrix<double, 6, 1> ExCJoint::getXi()
 {
     _xi <<
-    -(_w.cross(_q)),
+    -_w.cross(_q),
     _w;
 
     return _xi;

@@ -68,6 +68,11 @@ void emergency_stop_cb(std_msgs::Bool::ConstPtr msg)
     exc_arm.setEmergencyStop(*msg);
 }
 
+void calculation_mode_cb(std_msgs::Int16::ConstPtr msg)
+{
+    exc_arm.setCalculationMode(*msg);
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "ExC_Calculator");
@@ -88,6 +93,7 @@ int main(int argc, char **argv)
     ros::Subscriber motor_enable_sub = nh.subscribe<std_msgs::Bool>("motor_enable", 10, motor_enable_cb);
     ros::Subscriber exc_enable_sub = nh.subscribe<std_msgs::Bool>("exc_enable", 10, exc_enable_cb);
     ros::Subscriber emergency_stop_sub = nh.subscribe<std_msgs::Bool>("emergency_stop", 100, emergency_stop_cb);
+    ros::Subscriber calculation_mode_sub = nh.subscribe<std_msgs::Int16>("calculation_mode", 10, calculation_mode_cb);
 
     while(nh.ok())
     {

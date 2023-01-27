@@ -46,6 +46,9 @@ class ExCArmProperty
         double getLink(int joint, int axis);
         int getRotationAxis(int joint);
         Eigen::Matrix<double, 3, 3> getRotationMatrix(int joint, double angle);
+            Eigen::Matrix<double, 3, 3> getRotationMatrixX(double angle);
+            Eigen::Matrix<double, 3, 3> getRotationMatrixY(double angle);
+            Eigen::Matrix<double, 3, 3> getRotationMatrixZ(double angle);
 
         // ExC Joint
         Eigen::Matrix<double, 3, 1> getQ(int joint);
@@ -83,11 +86,11 @@ ExCArmProperty::ExCArmProperty()
 
     _joint_position = link2JointPosition(_link);
 
-    _translation_axis = _link.transpose();
-    // _translation_axis <<
-    // 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0;
+    // _translation_axis = _link.transpose();
+    _translation_axis <<
+    0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0;
     // _translation_axis <<
     // 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 0, 0, 0, 0, 0, 0, 0,
@@ -167,24 +170,15 @@ Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrix(int joint, double 
 
     if(getRotationAxis(joint) == 0)
     {
-        rotation_matrix_ <<
-        1.0,        0.0,         0.0,
-        0.0, cos(angle), -sin(angle),
-        0.0, sin(angle),  cos(angle);
+        rotation_matrix_ = getRotationMatrixX(angle);
     }
     else if(getRotationAxis(joint) == 1)
     {
-        rotation_matrix_ <<
-         cos(angle),        0.0, sin(angle),
-                0.0,        1.0,        0.0,
-        -sin(angle),        0.0, cos(angle);
+        rotation_matrix_ = getRotationMatrixY(angle);
     }
     else if(getRotationAxis(joint) == 2)
     {
-        rotation_matrix_ <<
-        cos(angle), -sin(angle), 0.0,
-        sin(angle),  cos(angle), 0.0,
-               0.0,         0.0, 1.0;
+        rotation_matrix_ = getRotationMatrixZ(angle);
     }
     else
     {
@@ -192,8 +186,39 @@ Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrix(int joint, double 
         1.0, 0.0, 0.0,
         0.0, 1.0, 0.0,
         0.0, 0.0, 1.0;
+        // TODO: Write the identity matrix as a function of Eigen
     }
     return rotation_matrix_;
+}
+
+Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrixX(double angle)
+{
+    Eigen::Matrix<double, 3,3> rotation_matrix_x_;
+    rotation_matrix_x_ <<
+    1.0,        0.0,         0.0,
+    0.0, cos(angle), -sin(angle),
+    0.0, sin(angle),  cos(angle);
+    return rotation_matrix_x_;
+}
+
+Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrixY(double angle)
+{
+    Eigen::Matrix<double, 3,3> rotation_matrix_y_;
+    rotation_matrix_y_ <<
+     cos(angle),        0.0, sin(angle),
+            0.0,        1.0,        0.0,
+    -sin(angle),        0.0, cos(angle);
+    return rotation_matrix_y_;
+}
+
+Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrixZ(double angle)
+{
+    Eigen::Matrix<double, 3,3> rotation_matrix_z_;
+    rotation_matrix_z_ <<
+    cos(angle), -sin(angle), 0.0,
+    sin(angle),  cos(angle), 0.0,
+           0.0,         0.0, 1.0;
+    return rotation_matrix_z_;
 }
 
 // ExC Joint

@@ -35,8 +35,11 @@ class ExCArm
 
         // Bool
         bool _motor_enable = false;
-        bool _exc_enable = false, _exc_enable_old = false;
+        bool _exc_enable = false, _exc_enable_old = true;
         bool _emergency_stop = false;
+
+        // Calculation Mode 0(else):Angle, 1:TimeDiff, 2:ExC
+        int _calculation_mode = 0, _calculation_mode_old = 0;
 
         // Motor
         Eigen::Matrix<double, JOINT_NUMBER, 1> _sensor_angle, _motor_angular_velocity;
@@ -50,6 +53,7 @@ class ExCArm
         Eigen::Matrix<double, 3, 3> _rotation_all;
 
         // Inverse Kinematics
+        double _proportional_gain = 10.0;
         Eigen::Matrix<double, 6, 1> _target_pose;
 
         // Linear Interpolation
@@ -58,8 +62,21 @@ class ExCArm
         ros::Time _time_start_move;
         double _midpoint, _duration_time, _linear_velocity = 50;    // _liner_velocity[mm/s]
 
+        // TimeDiff (Time Differentiation)
+        Eigen::Matrix<double, 6, 6> _time_diff_jacobian;
+        Eigen::Matrix<double, 3, 6> _translation_jacobian, _rotation_jacobian;
+        Eigen::Matrix<double, 3, 3> _alternating_euler;
+        Eigen::Matrix<double, 3, 6> _alternating_rotation;
+        bool _is_first_replace_variables = true;
+        double lofx, lofy, lofz, c12, s12,
+        l0x, l0y, l0z, t0, c0, s0,
+        l1x, l1y, l1z, t1, c1, s1,
+        l2x, l2y, l2z, t2, c2, s2,
+        l3x, l3y, l3z, t3, c3, s3,
+        l4x, l4y, l4z, t4, c4, s4,
+        l5x, l5y, l5z, t5, c5, s5;
+
         // ExC (Exponential Coordinates)
-        double _proportional_gain_exc = 10.0;
         Eigen::Matrix<double, 6, JOINT_NUMBER> _exc_jacobian;
         Eigen::Matrix<double, 6, JOINT_NUMBER> _exc_jacobian_body;
         Eigen::Matrix<double, 6, 6> _transformation_matrix;
@@ -79,6 +96,7 @@ class ExCArm
         void setMotorEnable(std_msgs::Bool motor_enable);
         void setExCEnable(std_msgs::Bool exc_enable);
         void setEmergencyStop(std_msgs::Bool emergency_stop);
+        void setCalculationMode(std_msgs::Int16 calculation_mode);
         void setSensorAngle(std_msgs::Float32MultiArray sensor_angle);
         void setTargetAngle(std_msgs::Float32MultiArray target_angle);
         void setTargetPose(geometry_msgs::Pose target_pose);
@@ -93,7 +111,13 @@ class ExCArm
         // Linear Interpolation
         Eigen::Matrix<double, 6, 1> getMidTargetPoseLinearInterpolation();
 
-        // ExC
+        // TimeDiff: Time Differentiation
+        Eigen::Matrix<double, 6, 6> getTimeDiffJacobian();
+            Eigen::Matrix<double, 3, 6> getTranslationJacobian();
+            Eigen::Matrix<double, 3, 6> getRotationJacobian();
+            void replaceVariables();
+
+        // ExC: Exponential Coordinates
         Eigen::Matrix<double, 6, JOINT_NUMBER> getExCJacobian();
         Eigen::Matrix<double, 6, JOINT_NUMBER> getExCJacobianBody();
             Eigen::Matrix<double, 6, 6> adjoint(Eigen::Matrix<double, 4, 4> matrix);
@@ -106,10 +130,12 @@ class ExCArm
         bool getMotorEnable();
         bool getExCEnable();
         bool getEmergencyStop();
+        int getCalculationMode();
         std_msgs::Float32MultiArray getMotorAngularVelocity();
             void changeMotorAngularVelocity();
                 void setMotorAngularVelocityZero();
                 void getMotorAngularVelocityByAngle();
+                void getMotorAngularVelocityByTimeDiff();
                 void getMotorAngularVelocityByExC();
 
 
@@ -175,6 +201,12 @@ void ExCArm::setEmergencyStop(std_msgs::Bool emergency_stop)
     _emergency_stop = emergency_stop.data;
 }
 
+void ExCArm::setCalculationMode(std_msgs::Int16 calculation_mode)
+{
+    _calculation_mode_old = _calculation_mode;
+    _calculation_mode = calculation_mode.data;
+}
+
 void ExCArm::setSensorAngle(std_msgs::Float32MultiArray sensor_angle)
 {
     sensor_angle.data.resize(JOINT_NUMBER);
@@ -195,7 +227,7 @@ void ExCArm::setTargetAngle(std_msgs::Float32MultiArray target_angle)
 
 void ExCArm::setTargetPose(geometry_msgs::Pose target_pose)
 {
-    if(target_pose != _target_pose_old || _exc_enable != _exc_enable_old)
+    if(target_pose != _target_pose_old || _calculation_mode != _calculation_mode_old)
     {
         _target_pose(0,0) = target_pose.position.x;
         _target_pose(1,0) = target_pose.position.y;
@@ -237,7 +269,7 @@ Eigen::Matrix<double, 6, 1> ExCArm::getPose()
     static geometry_msgs::TransformStamped transformStamped;
     static tf2::Quaternion q;
 
-    // Joint 0
+    // Pose
     transformStamped.header.stamp = ros::Time::now();
     transformStamped.header.frame_id = "arm_base_link";
     transformStamped.child_frame_id = "pose";
@@ -313,6 +345,11 @@ bool ExCArm::getEmergencyStop()
     return _emergency_stop;
 }
 
+int ExCArm::getCalculationMode()
+{
+    return _calculation_mode;
+}
+
 std_msgs::Float32MultiArray ExCArm::getMotorAngularVelocity()
 {
     changeMotorAngularVelocity();
@@ -336,11 +373,23 @@ void ExCArm::changeMotorAngularVelocity()
         return;
     }
 
-    if(_exc_enable)
+    if(_calculation_mode == 1)
+    {
+        getMotorAngularVelocityByTimeDiff();
+        return;
+    }
+    else if(_calculation_mode == 2)
     {
         getMotorAngularVelocityByExC();
         return;
     }
+
+    // if(_exc_enable)
+    // {
+    //     getMotorAngularVelocityByExC();
+    //     // getMotorAngularVelocityByTimeDiff();
+    //     return;
+    // }
     else
     {
         getMotorAngularVelocityByAngle();
@@ -358,16 +407,142 @@ void ExCArm::setMotorAngularVelocityZero()
 
 void ExCArm::getMotorAngularVelocityByAngle()
 {
-    if(_exc_enable) return;
+    // if(_exc_enable) return;
 
     _motor_angular_velocity = exc_arm_property.getProportionalGainAngleOperating()*(_target_angle - _sensor_angle);
 }
 
-void ExCArm::getMotorAngularVelocityByExC()
+void ExCArm::getMotorAngularVelocityByTimeDiff()
 {
-    _motor_angular_velocity = _proportional_gain_exc*(getExCJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
+    _motor_angular_velocity = _proportional_gain*(getTimeDiffJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
 }
 
+void ExCArm::getMotorAngularVelocityByExC()
+{
+    _motor_angular_velocity = _proportional_gain*(getExCJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
+}
+
+// TimeDiff; Time Differentiation
+Eigen::Matrix<double, 6, 6> ExCArm::getTimeDiffJacobian()
+{
+    if(JOINT_NUMBER != 6)
+    {
+        std::cout << "error: JOINT_NUMBER is not 6" << std::endl << "Time Differentiation Jacobian can only be used for models with JOINT_NUMBER == 6" << std::endl;
+        return _time_diff_jacobian;
+    }
+
+    replaceVariables();
+
+    _translation_jacobian = getTranslationJacobian();
+    _rotation_jacobian = getRotationJacobian();
+
+    _time_diff_jacobian << _translation_jacobian, _rotation_jacobian;
+
+    return _time_diff_jacobian;
+}
+
+Eigen::Matrix<double, 3, 6> ExCArm::getTranslationJacobian()
+{
+    _translation_jacobian(0,0) = - s0*(l0x + c1*(l1x + s2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) + c2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))) + s1*(l1z + c2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) - s2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z))))) - c0*(l0y + l1y + l2y + c3*(l3y + l4y + l5y*c5 + l5x*s5) + s3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)));
+    _translation_jacobian(0,1) = c0*(c1*(l1z + c2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) - s2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))) - s1*(l1x + s2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) + c2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))));
+    _translation_jacobian(0,2) = c0*(c1*(c2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) - s2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))) - s1*(s2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) + c2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))));
+    _translation_jacobian(0,3) = s0*(s3*(l3y + l4y + l5y*c5 + l5x*s5) - c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z))) - c12*c0*(c3*(l3y + l4y + l5y*c5 + l5x*s5) + s3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)));
+    _translation_jacobian(0,4) = s0*s3*(s4*(l4x + l5x*c5 - l5y*s5) - c4*(l4z + l5z)) - c0*(c1*(s2*(c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)) + c2*c3*(s4*(l4x + l5x*c5 - l5y*s5) - c4*(l4z + l5z))) + s1*(c2*(c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)) - c3*s2*(s4*(l4x + l5x*c5 - l5y*s5) - c4*(l4z + l5z))));
+    _translation_jacobian(0,5) = - c0*(c1*(c2*(s3*(l5x*c5 - l5y*s5) + c3*c4*(l5y*c5 + l5x*s5)) - s2*s4*(l5y*c5 + l5x*s5)) - s1*(s2*(s3*(l5x*c5 - l5y*s5) + c3*c4*(l5y*c5 + l5x*s5)) + c2*s4*(l5y*c5 + l5x*s5))) - s0*(c3*(l5x*c5 - l5y*s5) - c4*s3*(l5y*c5 + l5x*s5));
+
+    _translation_jacobian(1,0) = c0*(l0x + c1*(l1x + s2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) + c2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))) + s1*(l1z + c2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) - s2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z))))) - s0*(l0y + l1y + l2y + c3*(l3y + l4y + l5y*c5 + l5x*s5) + s3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)));
+    _translation_jacobian(1,1) = s0*(c1*(l1z + c2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) - s2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))) - s1*(l1x + s2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) + c2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))));
+    _translation_jacobian(1,2) = s0*(c1*(c2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) - s2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))) - s1*(s2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) + c2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))));
+    _translation_jacobian(1,3) = - c0*(s3*(l3y + l4y + l5y*c5 + l5x*s5) - c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z))) - c12*s0*(c3*(l3y + l4y + l5y*c5 + l5x*s5) + s3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)));
+    _translation_jacobian(1,4) = - s0*(c1*(s2*(c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)) + c2*c3*(s4*(l4x + l5x*c5 - l5y*s5) - c4*(l4z + l5z))) + s1*(c2*(c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)) - c3*s2*(s4*(l4x + l5x*c5 - l5y*s5) - c4*(l4z + l5z)))) - c0*s3*(s4*(l4x + l5x*c5 - l5y*s5) - c4*(l4z + l5z));
+    _translation_jacobian(1,5) = c0*(c3*(l5x*c5 - l5y*s5) - c4*s3*(l5y*c5 + l5x*s5)) - s0*(c1*(c2*(s3*(l5x*c5 - l5y*s5) + c3*c4*(l5y*c5 + l5x*s5)) - s2*s4*(l5y*c5 + l5x*s5)) - s1*(s2*(s3*(l5x*c5 - l5y*s5) + c3*c4*(l5y*c5 + l5x*s5)) + c2*s4*(l5y*c5 + l5x*s5)));
+
+    _translation_jacobian(2,0) = 0.0;
+    _translation_jacobian(2,1) = - c1*(l1x + s2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) + c2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))) - s1*(l1z + c2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) - s2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z))));
+    _translation_jacobian(2,2) = - c1*(s2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) + c2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)))) - s1*(c2*(l2z + l3z - s4*(l4x + l5x*c5 - l5y*s5) + c4*(l4z + l5z)) - s2*(l2x - s3*(l3y + l4y + l5y*c5 + l5x*s5) + c3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z))));
+    _translation_jacobian(2,3) = s12*(c3*(l3y + l4y + l5y*c5 + l5x*s5) + s3*(l3x + c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)));
+    _translation_jacobian(2,4) = s1*(s2*(c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)) + c2*c3*(s4*(l4x + l5x*c5 - l5y*s5) - c4*(l4z + l5z))) - c1*(c2*(c4*(l4x + l5x*c5 - l5y*s5) + s4*(l4z + l5z)) - c3*s2*(s4*(l4x + l5x*c5 - l5y*s5) - c4*(l4z + l5z)));
+    _translation_jacobian(2,5) = c1*(s2*(s3*(l5x*c5 - l5y*s5) + c3*c4*(l5y*c5 + l5x*s5)) + c2*s4*(l5y*c5 + l5x*s5)) + s1*(c2*(s3*(l5x*c5 - l5y*s5) + c3*c4*(l5y*c5 + l5x*s5)) - s2*s4*(l5y*c5 + l5x*s5));
+
+    return _translation_jacobian;
+}
+
+Eigen::Matrix<double, 3, 6> ExCArm::getRotationJacobian()
+{
+    _alternating_euler <<
+    0.0, -sin(_euler(0,0)), cos(_euler(1,0))*cos(_euler(0,0)),
+    0.0,  cos(_euler(0,0)), cos(_euler(1,0))*sin(_euler(0,0)),
+    1.0,               0.0,                 -sin(_euler(1,0));
+
+    _alternating_rotation <<
+    0.0, -s0, -s0, s12*c1,  c0*s1*s2*s3 -c0*c1*c2*s3 - c3*s0,    c0*c1*c4*s2 - s0*s3*s4 +c0*c2*c4*s1 +c0*c1*c2*c3*s4 -c0*c3*s1*s2*s4,
+    0.0,  c0,  c0, s12*s0, c0*c3 - c1*c2*s0*s3 + s0*s1*s2*s3, c0*s3*s4 + c1*c4*s0*s2 + c2*c4*s0*s1 + c1*c2*c3*s0*s4 - c3*s0*s1*s2*s4,
+    1.0, 0.0, 0.0,    c12,                            s12*s3,                        c1*c2*c4 - c4*s1*s2 - c1*c3*s2*s4 - c2*c3*s1*s4;
+
+    _rotation_jacobian = _alternating_euler.inverse()*_alternating_rotation;
+    return _rotation_jacobian;
+}
+
+void ExCArm::replaceVariables()
+{
+    if(_is_first_replace_variables)
+    {
+        lofx = exc_arm_property.getLink(0, 0);
+        lofy = exc_arm_property.getLink(0, 1);
+        lofz = exc_arm_property.getLink(0, 2);
+
+        l0x =exc_arm_property.getLink(1,0);
+        l0y =exc_arm_property.getLink(1,1);
+        l0z =exc_arm_property.getLink(1,2);
+
+        l1x =exc_arm_property.getLink(2,0);
+        l1y =exc_arm_property.getLink(2,1);
+        l1z =exc_arm_property.getLink(2,2);
+
+        l2x =exc_arm_property.getLink(3,0);
+        l2y =exc_arm_property.getLink(3,1);
+        l2z =exc_arm_property.getLink(3,2);
+
+        l3x =exc_arm_property.getLink(4,0);
+        l3y =exc_arm_property.getLink(4,1);
+        l3z =exc_arm_property.getLink(4,2);
+
+        l4x =exc_arm_property.getLink(5,0);
+        l4y =exc_arm_property.getLink(5,1);
+        l4z =exc_arm_property.getLink(5,2);
+
+        l5x =exc_arm_property.getLink(6,0);
+        l5y =exc_arm_property.getLink(6,1);
+        l5z =exc_arm_property.getLink(6,2);
+
+        _is_first_replace_variables = false;
+    }
+
+    t0 = _sensor_angle(0,0);
+    t1 = _sensor_angle(1,0);
+    t2 = _sensor_angle(2,0);
+    t3 = _sensor_angle(3,0);
+    t4 = _sensor_angle(4,0);
+    t5 = _sensor_angle(5,0);
+
+    c0 = cos(t0);
+    c1 = cos(t1);
+    c2 = cos(t2);
+    c3 = cos(t3);
+    c4 = cos(t4);
+    c5 = cos(t5);
+    c12 = cos(t1+t2);
+
+    s0 = sin(t0);
+    s1 = sin(t1);
+    s2 = sin(t2);
+    s3 = sin(t3);
+    s4 = sin(t4);
+    s5 = sin(t5);
+    s12 = sin(t1+t2);
+}
+
+// ExC: Exponential Coordinates
 Eigen::Matrix<double, 6, JOINT_NUMBER> ExCArm::getExCJacobian()
 {
     _exc_jacobian = (getTransformationMatrix().inverse())*getExCJacobianBody();
