@@ -110,7 +110,7 @@ int main(int argc, char **argv)
         MCA.data[5] = motor5.getPresentPosition()*deg2rad;
         #endif
 
-        CMAV = changeMotorAngularVelocity(CMAV);
+        // CMAV = changeMotorAngularVelocity(CMAV);
 
         #ifndef NO_MOTOR
         motor0.setGoalVelocity(CMAV.data[0]);

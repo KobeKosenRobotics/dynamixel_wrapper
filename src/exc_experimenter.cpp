@@ -1,6 +1,8 @@
 #include "class_exc_arm_property.hpp"
 #include "class_exc_arm.hpp"
 
+#include "class_wait.hpp"
+
 #include <ros/ros.h>
 
 #include <tf2/LinearMath/Quaternion.h>
@@ -26,6 +28,8 @@
 
 // Global
 ExCArm exc_arm;
+Wait wait;
+int step = 5;
 
 // Publisher
 std_msgs::Float32MultiArray CSAV;
@@ -39,6 +43,46 @@ geometry_msgs::Pose target_pose;
 std_msgs::Bool motor_enable;
 std_msgs::Bool exc_enable;
 std_msgs::Bool emergency_stop;
+
+// Function
+void sequence()
+{
+    switch(step)
+    {
+    case 0:
+        /* code */
+        break;
+
+    case 5:
+        exc_arm.setCalculationMode(0);
+        exc_arm.setTargetAngle(0.0, 0.2, 0.7, 0.0, 0.2, 0.0);
+        step = 10;
+        break;
+
+    case 10:
+        if(exc_arm.isInTargetAngle())
+        {
+            step = 15;
+        }
+        break;
+
+    case 15:
+        exc_arm.setCalculationMode(2);
+        exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 1.5, 0.0);
+        step = 20;
+        exc_arm.measurementStart();
+
+    case 20:
+        if(!wait.isWaiting(exc_arm.getDurationTIme()))
+        {
+            exc_arm.measurementEnd();
+            step = 5;
+        }
+
+    default:
+        break;
+    }
+};
 
 void SCA_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
@@ -58,12 +102,12 @@ void MCA_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 
 void target_angle_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
-    exc_arm.setTargetAngle(*msg);
+    // exc_arm.setTargetAngle(*msg);
 }
 
 void target_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
-    exc_arm.setTargetPose(*msg);
+    // exc_arm.setTargetPose(*msg);
 }
 
 void motor_enable_cb(std_msgs::Bool::ConstPtr msg)
@@ -78,7 +122,7 @@ void emergency_stop_cb(std_msgs::Bool::ConstPtr msg)
 
 void calculation_mode_cb(std_msgs::Int16::ConstPtr msg)
 {
-    exc_arm.setCalculationMode(*msg);
+    // exc_arm.setCalculationMode(*msg);
 }
 
 int main(int argc, char **argv)
@@ -108,7 +152,9 @@ int main(int argc, char **argv)
 
     while(nh.ok())
     {
-        exc_arm.print();
+        // exc_arm.print();
+
+        sequence();
 
         if(exc_arm.getMotorEnable())
         {

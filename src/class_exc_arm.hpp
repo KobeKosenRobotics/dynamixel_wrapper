@@ -87,7 +87,7 @@ class ExCArm
         // Experimentation
         double _total_calculation_time = 0.0;
         Eigen::Matrix<double, 6, 1> _pose_error;
-        int _test_number = 0;
+        int _test_number = 200;
         ros::Time _calculation_time_start, _calculation_time_end;
         int _calculation_number = 0;
 
@@ -177,6 +177,16 @@ void ExCArm::print()
     std::cout
 
     << std::endl
+    << "target angle"
+    << std::endl
+    << _target_angle
+
+    << std::endl
+    << "sensor angle"
+    << std::endl
+    << _sensor_angle
+
+    << std::endl
     << "pose"
     << std::endl
     << getPose()
@@ -229,9 +239,10 @@ void ExCArm::setTargetPose(double x_, double y_, double z_, double ez_, double e
 bool ExCArm::isInTargetAngle()
 {
     Eigen::Matrix<double, JOINT_NUMBER, 1> tolerance_angle_;
-    tolerance_angle_ << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
+    tolerance_angle_ << 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
+        // std::cout << fabs(_target_angle(i,0) - _sensor_angle(i,0)) << std::endl;
         if(fabs(_target_angle(i,0) - _sensor_angle(i,0)) > tolerance_angle_(i,0)) return false;
     }
     return true;
