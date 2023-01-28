@@ -176,20 +176,30 @@ void ExCArm::print()
 {
     std::cout
 
-    << std::endl
-    << "target angle"
-    << std::endl
-    << _target_angle
+    // << std::endl
+    // << "target angle"
+    // << std::endl
+    // << _target_angle
 
-    << std::endl
-    << "sensor angle"
-    << std::endl
-    << _sensor_angle
+    // << std::endl
+    // << "sensor angle"
+    // << std::endl
+    // << _sensor_angle
 
     << std::endl
     << "pose"
     << std::endl
     << getPose()
+
+    // << std::endl
+    // << "time diff jacobian"
+    // << std::endl
+    // << getTimeDiffJacobian()
+
+    // << std::endl
+    // << "exc jacobian"
+    // << std::endl
+    // << getExCJacobian()
 
     // << std::endl
     // << "mid target pose"
@@ -325,7 +335,7 @@ void ExCArm::setTargetAngle(std_msgs::Float32MultiArray target_angle)
 
 void ExCArm::setTargetPose(geometry_msgs::Pose target_pose)
 {
-    if(target_pose != _target_pose_old || _calculation_mode != _calculation_mode_old)
+    if((target_pose != _target_pose_old) || (_calculation_mode != _calculation_mode_old))
     {
         _target_pose(0,0) = target_pose.position.x;
         _target_pose(1,0) = target_pose.position.y;
@@ -666,14 +676,13 @@ Eigen::Matrix<double, 6, JOINT_NUMBER> ExCArm::getExCJacobianBody()
         Eigen::Matrix<double, 4, 4> matrix_;
         matrix_ = exc_arm_property.getGstZero();
 
-        for(int j = JOINT_NUMBER-1; i <= j ; j--)
+        for(int j = JOINT_NUMBER-1; i <= j; j--)
         {
             matrix_ = exc_joint[j].getExpXiHatTheta(_sensor_angle(j,0))*matrix_;
         }
 
         xi_dagger_[i] = adjointInverse(matrix_)*exc_joint[i].getXi();
 
-        _exc_jacobian_body(i,0) = xi_dagger_[i](0,0);
         for(int k = 0; k < 6; k++)
         {
             _exc_jacobian_body(k,i) = xi_dagger_[i](k,0);
