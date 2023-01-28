@@ -35,7 +35,6 @@ class ExCArm
 
         // Bool
         bool _motor_enable = false;
-        bool _exc_enable = false, _exc_enable_old = true;
         bool _emergency_stop = false;
 
         // Calculation Mode 0(else):Angle, 1:TimeDiff, 2:ExC
@@ -85,6 +84,13 @@ class ExCArm
         // Other
         Eigen::Matrix<double, 3, 3> _zero;
 
+        // Experimentation
+        double _total_calculation_time = 0.0;
+        Eigen::Matrix<double, 6, 1> _pose_error;
+        int _test_number = 0;
+        ros::Time _calculation_time_start, _calculation_time_end;
+        int _calculation_number = 0;
+
     public:
         // Constructor
         ExCArm();
@@ -92,9 +98,18 @@ class ExCArm
         // Debug
         void print();
 
+        // Experimentation
+        void setCalculationMode(int calculation_mode_);
+        void setTargetAngle(double angle0_, double angle1_, double angle2_, double angle3_, double angle4_, double angle5_);
+        void setTargetPose(double x_, double y_, double z_, double ez_, double ey_, double ex_);
+        bool isInTargetAngle();
+        bool isInTargetPose();
+        void measurementStart();
+        void measurementEnd();
+        double getDurationTIme();
+
         // Subscribe
         void setMotorEnable(std_msgs::Bool motor_enable);
-        void setExCEnable(std_msgs::Bool exc_enable);
         void setEmergencyStop(std_msgs::Bool emergency_stop);
         void setCalculationMode(std_msgs::Int16 calculation_mode);
         void setSensorAngle(std_msgs::Float32MultiArray sensor_angle);
@@ -128,9 +143,9 @@ class ExCArm
 
         // Publish
         bool getMotorEnable();
-        bool getExCEnable();
         bool getEmergencyStop();
         int getCalculationMode();
+        std_msgs::Float32MultiArray getMotorAngularVelocityZero();
         std_msgs::Float32MultiArray getMotorAngularVelocity();
             void changeMotorAngularVelocity();
                 void setMotorAngularVelocityZero();
@@ -184,16 +199,88 @@ void ExCArm::print()
     << std::endl;
 }
 
+// Experimentation
+void ExCArm::setCalculationMode(int calculation_mode_)
+{
+    _calculation_mode = calculation_mode_;
+}
+
+void ExCArm::setTargetAngle(double angle0_, double angle1_, double angle2_, double angle3_, double angle4_, double angle5_)
+{
+    _target_angle(0,0) = angle0_;
+    _target_angle(1,0) = angle1_;
+    _target_angle(2,0) = angle2_;
+    _target_angle(3,0) = angle3_;
+    _target_angle(4,0) = angle4_;
+    _target_angle(5,0) = angle5_;
+}
+
+void ExCArm::setTargetPose(double x_, double y_, double z_, double ez_, double ey_, double ex_)
+{
+    _target_pose(0,0) = x_;
+    _target_pose(1,0) = y_;
+    _target_pose(2,0) = z_;
+    _target_pose(3,0) = ez_;
+    _target_pose(4,0) = ey_;
+    _target_pose(5,0) = ex_;
+    setTargetPoseStart();
+}
+
+bool ExCArm::isInTargetAngle()
+{
+    Eigen::Matrix<double, JOINT_NUMBER, 1> tolerance_angle_;
+    tolerance_angle_ << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        if(fabs(_target_angle(i,0) - _sensor_angle(i,0)) > tolerance_angle_(i,0)) return false;
+    }
+    return true;
+}
+
+bool ExCArm::isInTargetPose()
+{
+    Eigen::Matrix<double, 6, 1> tolerance_pose_;
+    tolerance_pose_ << 0.01, 0.01, 0.01, 0.001, 0.001, 0.001;
+    for(int i = 0; i < 6; i++)
+    {
+        if(fabs(_target_pose(i,0) - _pose(i,0)) > tolerance_pose_(i,0)) return false;
+    }
+    return true;
+}
+
+void ExCArm::measurementStart()
+{
+    _total_calculation_time = 0.0;
+    _calculation_number = 0;
+}
+
+void ExCArm::measurementEnd()
+{
+    _pose_error = _target_pose - _pose;
+    std::cout
+    << _calculation_mode << ", "
+    << _test_number << ", "
+    << _total_calculation_time << ", "
+    << _calculation_number << ", "
+    << _total_calculation_time/_calculation_number << ", "
+    << _pose_error(0,0) << ", "
+    << _pose_error(1,0) << ", "
+    << _pose_error(2,0) << ", "
+    << _pose_error(3,0) << ", "
+    << _pose_error(4,0) << ", "
+    << _pose_error(5,0) << ","
+    << std::endl;
+    _test_number++;
+}
+double ExCArm::getDurationTIme()
+{
+    return _duration_time;
+}
+
 // Subscribe
 void ExCArm::setMotorEnable(std_msgs::Bool motor_enable)
 {
     _motor_enable = motor_enable.data;
-}
-
-void ExCArm::setExCEnable(std_msgs::Bool exc_enable)
-{
-    _exc_enable_old = _exc_enable;
-    _exc_enable = exc_enable.data;
 }
 
 void ExCArm::setEmergencyStop(std_msgs::Bool emergency_stop)
@@ -232,9 +319,9 @@ void ExCArm::setTargetPose(geometry_msgs::Pose target_pose)
         _target_pose(0,0) = target_pose.position.x;
         _target_pose(1,0) = target_pose.position.y;
         _target_pose(2,0) = target_pose.position.z;
-        _target_pose(3,0) = target_pose.orientation.x;
+        _target_pose(3,0) = target_pose.orientation.z;
         _target_pose(4,0) = target_pose.orientation.y;
-        _target_pose(5,0) = target_pose.orientation.z;
+        _target_pose(5,0) = target_pose.orientation.x;
         setTargetPoseStart();
     }
 
@@ -335,11 +422,6 @@ bool ExCArm::getMotorEnable()
     return _motor_enable;
 }
 
-bool ExCArm::getExCEnable()
-{
-    return _exc_enable;
-}
-
 bool ExCArm::getEmergencyStop()
 {
     return _emergency_stop;
@@ -348,6 +430,19 @@ bool ExCArm::getEmergencyStop()
 int ExCArm::getCalculationMode()
 {
     return _calculation_mode;
+}
+
+std_msgs::Float32MultiArray ExCArm::getMotorAngularVelocityZero()
+{
+    std_msgs::Float32MultiArray motor_angular_velocity_zero_;
+    motor_angular_velocity_zero_.data.resize(JOINT_NUMBER);
+
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        motor_angular_velocity_zero_.data[i] = 0.0;
+    }
+
+    return motor_angular_velocity_zero_;
 }
 
 std_msgs::Float32MultiArray ExCArm::getMotorAngularVelocity()
@@ -375,21 +470,23 @@ void ExCArm::changeMotorAngularVelocity()
 
     if(_calculation_mode == 1)
     {
+        _calculation_number++;
+        _calculation_time_start = ros::Time::now();
         getMotorAngularVelocityByTimeDiff();
+        _calculation_time_end = ros::Time::now();
+        _total_calculation_time += (_calculation_time_end - _calculation_time_start).toSec();
         return;
     }
     else if(_calculation_mode == 2)
     {
+        _calculation_number++;
+        _calculation_time_start = ros::Time::now();
         getMotorAngularVelocityByExC();
+        _calculation_time_end = ros::Time::now();
+        _total_calculation_time += (_calculation_time_end - _calculation_time_start).toSec();
         return;
     }
 
-    // if(_exc_enable)
-    // {
-    //     getMotorAngularVelocityByExC();
-    //     // getMotorAngularVelocityByTimeDiff();
-    //     return;
-    // }
     else
     {
         getMotorAngularVelocityByAngle();
@@ -407,8 +504,7 @@ void ExCArm::setMotorAngularVelocityZero()
 
 void ExCArm::getMotorAngularVelocityByAngle()
 {
-    // if(_exc_enable) return;
-
+    getPose();
     _motor_angular_velocity = exc_arm_property.getProportionalGainAngleOperating()*(_target_angle - _sensor_angle);
 }
 

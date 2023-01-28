@@ -1,3 +1,5 @@
+// #define NO_MOTOR
+
 #include "class_exc_arm_property.hpp"
 
 #include <ros/ros.h>
@@ -23,14 +25,14 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-// Publisher
-std_msgs::Float32MultiArray motor_angle;
-
-// Subscriber
-std_msgs::Float32MultiArray motor_angular_velocity;
-
 // Global
 double max_motor_angular_velocity = 6.0;    // max_motor_angular_velocity[rad/s]
+
+// Publisher
+std_msgs::Float32MultiArray MCA;
+
+// Subscriber
+std_msgs::Float32MultiArray CMAV;
 
 // Function
 std_msgs::Float32MultiArray changeMotorAngularVelocity(std_msgs::Float32MultiArray msg)
@@ -42,9 +44,9 @@ std_msgs::Float32MultiArray changeMotorAngularVelocity(std_msgs::Float32MultiArr
     return msg;
 }
 
-void motor_angular_velocity_cb(std_msgs::Float32MultiArray::ConstPtr msg)
+void CMAV_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
-    motor_angular_velocity = *msg;
+    CMAV = *msg;
 }
 
 int main(int argc, char **argv)
@@ -55,13 +57,14 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(rate);
 
     // Publisher
-    ros::Publisher motor_angle_pub = nh.advertise<std_msgs::Float32MultiArray>("motor_angle", 100);
-    motor_angle.data.resize(JOINT_NUMBER);
+    ros::Publisher MCA_pub = nh.advertise<std_msgs::Float32MultiArray>("MCA", 100);
+    MCA.data.resize(JOINT_NUMBER);
 
     // Subscriber
-    ros::Subscriber motor_angular_velocity_sub = nh.subscribe<std_msgs::Float32MultiArray>("motor_angular_velocity", 100, motor_angular_velocity_cb);
-    motor_angular_velocity.data.resize(JOINT_NUMBER);
+    ros::Subscriber CMAV_sub = nh.subscribe<std_msgs::Float32MultiArray>("CMAV", 100, CMAV_cb);
+    CMAV.data.resize(JOINT_NUMBER);
 
+    #ifndef NO_MOTOR
     // Motor Declaration
     std::string port_name("/dev/ttyUSB0");
     int baudrate = 1000000;
@@ -94,37 +97,44 @@ int main(int argc, char **argv)
     motor3.setTorqueEnable(true);
     motor4.setTorqueEnable(true);
     motor5.setTorqueEnable(true);
+    #endif
 
     while(nh.ok())
     {
-        motor_angle.data[0] = motor0.getPresentPosition()*deg2rad;
-        motor_angle.data[1] = motor1.getPresentPosition()*deg2rad;
-        motor_angle.data[2] = motor2.getPresentPosition()*deg2rad;
-        motor_angle.data[3] = motor3.getPresentPosition()*deg2rad;
-        motor_angle.data[4] = motor4.getPresentPosition()*deg2rad;
-        motor_angle.data[5] = motor5.getPresentPosition()*deg2rad;
+        #ifndef NO_MOTOR
+        MCA.data[0] = motor0.getPresentPosition()*deg2rad;
+        MCA.data[1] = motor1.getPresentPosition()*deg2rad;
+        MCA.data[2] = motor2.getPresentPosition()*deg2rad;
+        MCA.data[3] = motor3.getPresentPosition()*deg2rad;
+        MCA.data[4] = motor4.getPresentPosition()*deg2rad;
+        MCA.data[5] = motor5.getPresentPosition()*deg2rad;
+        #endif
 
-        motor_angular_velocity = changeMotorAngularVelocity(motor_angular_velocity);
+        CMAV = changeMotorAngularVelocity(CMAV);
 
-        motor0.setGoalVelocity(motor_angular_velocity.data[0]);
-        motor1.setGoalVelocity(motor_angular_velocity.data[1]);
-        motor2.setGoalVelocity(motor_angular_velocity.data[2]);
-        motor3.setGoalVelocity(motor_angular_velocity.data[3]);
-        motor4.setGoalVelocity(motor_angular_velocity.data[4]);
-        motor5.setGoalVelocity(motor_angular_velocity.data[5]);
+        #ifndef NO_MOTOR
+        motor0.setGoalVelocity(CMAV.data[0]);
+        motor1.setGoalVelocity(CMAV.data[1]);
+        motor2.setGoalVelocity(CMAV.data[2]);
+        motor3.setGoalVelocity(CMAV.data[3]);
+        motor4.setGoalVelocity(CMAV.data[4]);
+        motor5.setGoalVelocity(CMAV.data[5]);
+        #endif
 
-        motor_angle_pub.publish(motor_angle);
+        MCA_pub.publish(MCA);
 
         ros::spinOnce();
         loop_rate.sleep();
     }
 
+    #ifndef NO_MOTOR
     motor0.setTorqueEnable(false);
     motor1.setTorqueEnable(false);
     motor2.setTorqueEnable(false);
     motor3.setTorqueEnable(false);
     motor4.setTorqueEnable(false);
     motor5.setTorqueEnable(false);
+    #endif NO_MOTOR
 
     return 0;
 }

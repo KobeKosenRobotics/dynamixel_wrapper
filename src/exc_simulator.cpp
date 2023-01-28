@@ -34,6 +34,7 @@ std_msgs::Float32MultiArray SCA;
 // Subscriber
 std_msgs::Float32MultiArray CSAV;
 
+// Function
 void CSAV_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
     CSAV = *msg;
