@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     motor3.setTorqueEnable(false);
     motor4.setTorqueEnable(false);
     motor5.setTorqueEnable(false);
-    #endif NO_MOTOR
+    #endif
 
     return 0;
 }

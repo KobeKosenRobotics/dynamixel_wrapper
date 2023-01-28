@@ -24,8 +24,15 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#define DOF6
+
+#ifdef DOF6
 const int JOINT_NUMBER = 6;
-// const int JOINT_NUMBER = 7;
+#endif
+#ifndef DOF6
+const int JOINT_NUMBER = 7;
+#endif
+
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
 
 class ExCArmProperty
@@ -61,11 +68,15 @@ class ExCArmProperty
 
         // Angle Operating
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> getProportionalGainAngleOperating();
+
+        // Pseudo-Inverse Matrix
+        Eigen::Matrix<double, JOINT_NUMBER, 6> getPseudoInverseMatrix(Eigen::Matrix<double, 6, JOINT_NUMBER> matrix_);
 };
 ExCArmProperty exc_arm_property;
 
 ExCArmProperty::ExCArmProperty()
 {
+    #ifdef DOF6
     _link <<
       0.0, 0.0, 159.0,
       0.0, 0.0,   0.0,
@@ -74,45 +85,21 @@ ExCArmProperty::ExCArmProperty()
       0.0, 0.0,   0.0,
       0.0, 0.0, 123.0,
       0.0, 0.0,   0.0;
-    // _link <<
-    //   0.0, 0.0, 159.0,
-    //   0.0, 0.0,   0.0,
-    //  30.0, 0.0, 264.0,
-    // -30.0, 0.0, 258.0,
-    //   0.0, 0.0,   0.0,
-    //   0.0, 0.0, 123.0,
-    //   0.0, 0.0,   0.0,
-    //   0.0, 0.0, 100.0;
 
     _joint_position = link2JointPosition(_link);
 
-    // _translation_axis = _link.transpose();
     _translation_axis <<
     0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0;
-    // _translation_axis <<
-    // 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0, 0;
+
 
     _rotation_axis <<
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0,
     1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0;
-    // _rotation_axis <<
-    // 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 1, 1, 0, 1, 0, 1, 0,
-    // 1, 0, 0, 1, 0, 1, 0, 0;
-
-    _gst_zero <<
-    1.0, 0.0, 0.0, _joint_position(0, JOINT_NUMBER),
-    0.0, 1.0, 0.0, _joint_position(1, JOINT_NUMBER),
-    0.0, 0.0, 1.0, _joint_position(2, JOINT_NUMBER),
-    0.0, 0.0, 0.0,                              1.0;
 
     _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6";
-    // _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7";
 
     _proportional_gain_angle_operating <<
     10.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -121,14 +108,48 @@ ExCArmProperty::ExCArmProperty()
     0.0, 0.0, 0.0, 10.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 10.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 10.0;
-    // _proportional_gain_angle_operating <<
-    // 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    // 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    // 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-    // 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
-    // 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0,
-    // 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0,
-    // 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
+    #endif
+
+    #ifndef DOF6
+    _link <<
+      0.0, 0.0, 159.0,
+      0.0, 0.0,   0.0,
+     30.0, 0.0, 264.0,
+    -30.0, 0.0, 258.0,
+      0.0, 0.0,   0.0,
+      0.0, 0.0, 123.0,
+      0.0, 0.0,   0.0,
+      0.0, 0.0, 100.0;
+
+    _joint_position = link2JointPosition(_link);
+
+    _translation_axis <<
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0;
+
+    _rotation_axis <<
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+    1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0;
+
+    _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7";
+
+    _proportional_gain_angle_operating <<
+    1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
+    #endif
+
+    _gst_zero <<
+    1.0, 0.0, 0.0, _joint_position(0, JOINT_NUMBER),
+    0.0, 1.0, 0.0, _joint_position(1, JOINT_NUMBER),
+    0.0, 0.0, 1.0, _joint_position(2, JOINT_NUMBER),
+    0.0, 0.0, 0.0,                              1.0;
 }
 
 Eigen::Matrix<double, 3, JOINT_NUMBER+1> ExCArmProperty::link2JointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link)
@@ -256,6 +277,20 @@ std::string ExCArmProperty::getJointName(int joint)
 Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> ExCArmProperty::getProportionalGainAngleOperating()
 {
     return _proportional_gain_angle_operating;
+}
+
+// Pseudo-Inverse Matrix
+Eigen::Matrix<double, JOINT_NUMBER, 6> ExCArmProperty::getPseudoInverseMatrix(Eigen::Matrix<double, 6, JOINT_NUMBER> matrix_)
+{
+    Eigen::Matrix<double, JOINT_NUMBER, 6> pseudo_inverse_matrix_;
+    Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> square_matrix_;
+
+    square_matrix_ = (matrix_.transpose())*(matrix_);
+    // std::cout << square_matrix_.determinant() << std::endl;
+
+    pseudo_inverse_matrix_ = (square_matrix_.inverse())*(matrix_.transpose());
+
+    return pseudo_inverse_matrix_;
 }
 
 #endif

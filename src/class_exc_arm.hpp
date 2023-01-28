@@ -61,7 +61,7 @@ class ExCArm
         ros::Time _time_start_move;
         double _midpoint, _duration_time, _linear_velocity = 50;    // _liner_velocity[mm/s]
 
-        // TimeDiff (Time Differentiation)
+        // TimeDiff: Time Differentiation
         Eigen::Matrix<double, 6, 6> _time_diff_jacobian;
         Eigen::Matrix<double, 3, 6> _translation_jacobian, _rotation_jacobian;
         Eigen::Matrix<double, 3, 3> _alternating_euler;
@@ -75,7 +75,7 @@ class ExCArm
         l4x, l4y, l4z, t4, c4, s4,
         l5x, l5y, l5z, t5, c5, s5;
 
-        // ExC (Exponential Coordinates)
+        // ExC: Exponential Coordinates
         Eigen::Matrix<double, 6, JOINT_NUMBER> _exc_jacobian;
         Eigen::Matrix<double, 6, JOINT_NUMBER> _exc_jacobian_body;
         Eigen::Matrix<double, 6, 6> _transformation_matrix;
@@ -126,6 +126,18 @@ class ExCArm
         // Linear Interpolation
         Eigen::Matrix<double, 6, 1> getMidTargetPoseLinearInterpolation();
 
+        // Publish
+        bool getMotorEnable();
+        bool getEmergencyStop();
+        int getCalculationMode();
+        std_msgs::Float32MultiArray getMotorAngularVelocityZero();
+        std_msgs::Float32MultiArray getMotorAngularVelocity();
+            void changeMotorAngularVelocity();
+                void setMotorAngularVelocityZero();
+                void getMotorAngularVelocityByAngle();
+                void getMotorAngularVelocityByTimeDiff();
+                void getMotorAngularVelocityByExC();
+
         // TimeDiff: Time Differentiation
         Eigen::Matrix<double, 6, 6> getTimeDiffJacobian();
             Eigen::Matrix<double, 3, 6> getTranslationJacobian();
@@ -140,20 +152,6 @@ class ExCArm
             Eigen::Matrix<double, 3, 3> hat(Eigen::Matrix<double, 3, 1> vector);
         Eigen::Matrix<double, 6, 6> getTransformationMatrix();
             Eigen::Matrix<double, 3, 3> getTransformationEuler();
-
-        // Publish
-        bool getMotorEnable();
-        bool getEmergencyStop();
-        int getCalculationMode();
-        std_msgs::Float32MultiArray getMotorAngularVelocityZero();
-        std_msgs::Float32MultiArray getMotorAngularVelocity();
-            void changeMotorAngularVelocity();
-                void setMotorAngularVelocityZero();
-                void getMotorAngularVelocityByAngle();
-                void getMotorAngularVelocityByTimeDiff();
-                void getMotorAngularVelocityByExC();
-
-
 };
 
 // Constructor
@@ -252,7 +250,6 @@ bool ExCArm::isInTargetAngle()
     tolerance_angle_ << 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
-        // std::cout << fabs(_target_angle(i,0) - _sensor_angle(i,0)) << std::endl;
         if(fabs(_target_angle(i,0) - _sensor_angle(i,0)) > tolerance_angle_(i,0)) return false;
     }
     return true;
@@ -278,6 +275,7 @@ void ExCArm::measurementStart()
 void ExCArm::measurementEnd()
 {
     _pose_error = _target_pose - _pose;
+
     std::cout
     << _calculation_mode << ", "
     << _test_number << ", "
@@ -291,6 +289,7 @@ void ExCArm::measurementEnd()
     << _pose_error(4,0) << ", "
     << _pose_error(5,0) << ","
     << std::endl;
+
     _test_number++;
 }
 double ExCArm::getDurationTIme()
@@ -531,12 +530,19 @@ void ExCArm::getMotorAngularVelocityByAngle()
 
 void ExCArm::getMotorAngularVelocityByTimeDiff()
 {
+    #ifdef DOF6
     _motor_angular_velocity = _proportional_gain*(getTimeDiffJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
+    #endif
 }
 
 void ExCArm::getMotorAngularVelocityByExC()
 {
+    #ifdef DOF6
     _motor_angular_velocity = _proportional_gain*(getExCJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
+    #endif
+    #ifndef DOF6
+    _motor_angular_velocity = _proportional_gain*(exc_arm_property.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
+    #endif
 }
 
 // TimeDiff; Time Differentiation
