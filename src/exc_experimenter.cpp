@@ -73,7 +73,7 @@ void sequence()
         exc_arm.measurementStart();
 
     case 20:
-        if(!wait.isWaiting(exc_arm.getDurationTIme()))
+        if(!wait.isWaiting(2*(exc_arm.getDurationTIme())))
         {
             exc_arm.measurementEnd();
             step = 5;

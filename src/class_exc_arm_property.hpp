@@ -23,14 +23,26 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>
+#include <Eigen/SVD>
 
-#define DOF6
+// #define DOF6
+// #define DOF7
+#define DOF8
 
 #ifdef DOF6
 const int JOINT_NUMBER = 6;
 #endif
+
 #ifndef DOF6
+
+#ifdef DOF7
 const int JOINT_NUMBER = 7;
+#endif
+
+#ifdef DOF8
+const int JOINT_NUMBER = 8;
+#endif
+
 #endif
 
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
@@ -111,6 +123,8 @@ ExCArmProperty::ExCArmProperty()
     #endif
 
     #ifndef DOF6
+
+    #ifdef DOF7
     _link <<
       0.0, 0.0, 159.0,
       0.0, 0.0,   0.0,
@@ -143,6 +157,45 @@ ExCArmProperty::ExCArmProperty()
     0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
+    #endif
+
+    #ifdef DOF8
+    _link <<
+    0.0, 0.0, 100.0,
+    0.0, 0.0, 100.0,
+    0.0, 0.0, 100.0,
+    0.0, 0.0, 100.0,
+    0.0, 0.0, 100.0,
+    0.0, 0.0, 100.0,
+    0.0, 0.0, 100.0,
+    0.0, 0.0, 100.0,
+    0.0, 0.0, 100.0;
+
+    _joint_position = link2JointPosition(_link);
+
+    _translation_axis <<
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0;
+
+    _rotation_axis <<
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0,
+    1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0;
+
+    _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7", "joint8";
+
+    _proportional_gain_angle_operating <<
+    1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
+    #endif
+
     #endif
 
     _gst_zero <<
@@ -283,12 +336,15 @@ Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> ExCArmProperty::getProportiona
 Eigen::Matrix<double, JOINT_NUMBER, 6> ExCArmProperty::getPseudoInverseMatrix(Eigen::Matrix<double, 6, JOINT_NUMBER> matrix_)
 {
     Eigen::Matrix<double, JOINT_NUMBER, 6> pseudo_inverse_matrix_;
-    Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> square_matrix_;
 
-    square_matrix_ = (matrix_.transpose())*(matrix_);
-    // std::cout << square_matrix_.determinant() << std::endl;
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::MatrixXd U = svd.matrixU();
+    Eigen::MatrixXd S = svd.singularValues().asDiagonal();
+    Eigen::MatrixXd V = svd.matrixV();
 
-    pseudo_inverse_matrix_ = (square_matrix_.inverse())*(matrix_.transpose());
+    pseudo_inverse_matrix_ = V*S.inverse()*U.transpose();
+
+    // std::cout << pseudo_inverse_matrix_*matrix_ << std::endl;
 
     return pseudo_inverse_matrix_;
 }

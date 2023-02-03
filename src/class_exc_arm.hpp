@@ -87,7 +87,7 @@ class ExCArm
         // Experimentation
         double _total_calculation_time = 0.0;
         Eigen::Matrix<double, 6, 1> _pose_error;
-        int _test_number = 200;
+        int _test_number = 0;
         ros::Time _calculation_time_start, _calculation_time_end;
         int _calculation_number = 0;
 
@@ -533,6 +533,10 @@ void ExCArm::getMotorAngularVelocityByTimeDiff()
     #ifdef DOF6
     _motor_angular_velocity = _proportional_gain*(getTimeDiffJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
     #endif
+
+    #ifndef DOF6
+    std::cout << "error: JOINT_NUMBER is not 6" << std::endl << "Time Differentiation Jacobian can only be used for models with JOINT_NUMBER == 6" << std::endl;
+    #endif
 }
 
 void ExCArm::getMotorAngularVelocityByExC()
@@ -540,6 +544,7 @@ void ExCArm::getMotorAngularVelocityByExC()
     #ifdef DOF6
     _motor_angular_velocity = _proportional_gain*(getExCJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
     #endif
+
     #ifndef DOF6
     _motor_angular_velocity = _proportional_gain*(exc_arm_property.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
     #endif
@@ -548,12 +553,6 @@ void ExCArm::getMotorAngularVelocityByExC()
 // TimeDiff; Time Differentiation
 Eigen::Matrix<double, 6, 6> ExCArm::getTimeDiffJacobian()
 {
-    if(JOINT_NUMBER != 6)
-    {
-        std::cout << "error: JOINT_NUMBER is not 6" << std::endl << "Time Differentiation Jacobian can only be used for models with JOINT_NUMBER == 6" << std::endl;
-        return _time_diff_jacobian;
-    }
-
     replaceVariables();
 
     _translation_jacobian = getTranslationJacobian();
