@@ -52,7 +52,7 @@ class ExCArm
         Eigen::Matrix<double, 3, 3> _rotation_all;
 
         // Inverse Kinematics
-        double _proportional_gain = 10.0;
+        double _proportional_gain = 20.0;
         Eigen::Matrix<double, 6, 1> _target_pose;
 
         // Linear Interpolation

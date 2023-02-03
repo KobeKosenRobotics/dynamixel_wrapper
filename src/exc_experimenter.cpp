@@ -2,6 +2,7 @@
 #include "class_exc_arm.hpp"
 
 #include "class_wait.hpp"
+#include "class_random.hpp"
 
 #include <ros/ros.h>
 
@@ -29,6 +30,7 @@
 // Global
 ExCArm exc_arm;
 Wait wait;
+Random random_number;
 int step = 5;
 
 // Publisher
@@ -68,12 +70,13 @@ void sequence()
 
     case 15:
         exc_arm.setCalculationMode(2);
-        exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 1.5, 0.0);
+        // exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 1.5, 0.0);
+        exc_arm.setTargetPose(random_number.getRandomNumber(-300.0, 300.0, 1.0), random_number.getRandomNumber(-300.0, 300.0, 1.0), random_number.getRandomNumber(100.0, 300.0, 1.0), random_number.getRandomNumber(-1.0, 1.0, 0.05), random_number.getRandomNumber(0.0, 1.5, 0.05), random_number.getRandomNumber(-1.0, 1.0, 0.05));
         step = 20;
         exc_arm.measurementStart();
 
     case 20:
-        if(!wait.isWaiting(2*(exc_arm.getDurationTIme())))
+        if(!wait.isWaiting(1.01*(exc_arm.getDurationTIme())))
         {
             exc_arm.measurementEnd();
             step = 5;

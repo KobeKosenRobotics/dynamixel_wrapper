@@ -25,9 +25,9 @@
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
-// #define DOF6
+#define DOF6
 // #define DOF7
-#define DOF8
+// #define DOF8
 
 #ifdef DOF6
 const int JOINT_NUMBER = 6;
