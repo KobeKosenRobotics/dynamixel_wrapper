@@ -53,6 +53,7 @@ class ExCArmProperty
         Eigen::Matrix<double, JOINT_NUMBER+1, 3> _link;
         Eigen::Matrix<double, 3, JOINT_NUMBER+1> _joint_position;
         Eigen::Matrix<double, 3, JOINT_NUMBER+1> _translation_axis, _rotation_axis;
+        Eigen::Matrix<double, 3, 3> _gst_zero_rotation_matrix;
         Eigen::Matrix<double, 4, 4> _gst_zero;
         Eigen::Matrix<std::string, JOINT_NUMBER+1, 1> _joint_name;
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
@@ -198,11 +199,16 @@ ExCArmProperty::ExCArmProperty()
 
     #endif
 
+    _gst_zero_rotation_matrix <<
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0;
+
     _gst_zero <<
-    1.0, 0.0, 0.0, _joint_position(0, JOINT_NUMBER),
-    0.0, 1.0, 0.0, _joint_position(1, JOINT_NUMBER),
-    0.0, 0.0, 1.0, _joint_position(2, JOINT_NUMBER),
-    0.0, 0.0, 0.0,                              1.0;
+    _gst_zero_rotation_matrix(0,0), _gst_zero_rotation_matrix(0,1), _gst_zero_rotation_matrix(0,2), _joint_position(0, JOINT_NUMBER),
+    _gst_zero_rotation_matrix(1,0), _gst_zero_rotation_matrix(1,1), _gst_zero_rotation_matrix(1,2), _joint_position(1, JOINT_NUMBER),
+    _gst_zero_rotation_matrix(2,0), _gst_zero_rotation_matrix(2,1), _gst_zero_rotation_matrix(2,2), _joint_position(2, JOINT_NUMBER),
+                               0.0,                            0.0,                            0.0,                              1.0;
 }
 
 Eigen::Matrix<double, 3, JOINT_NUMBER+1> ExCArmProperty::link2JointPosition(Eigen::Matrix<double, JOINT_NUMBER+1, 3> link)
@@ -240,9 +246,13 @@ int ExCArmProperty::getRotationAxis(int joint)
 
 Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrix(int joint, double angle)
 {
-    Eigen::Matrix<double, 3,3> rotation_matrix_;
+    Eigen::Matrix<double, 3, 3> rotation_matrix_;
 
-    if(getRotationAxis(joint) == 0)
+    if(joint == JOINT_NUMBER)
+    {
+        rotation_matrix_ = _gst_zero_rotation_matrix;
+    }
+    else if(getRotationAxis(joint) == 0)
     {
         rotation_matrix_ = getRotationMatrixX(angle);
     }

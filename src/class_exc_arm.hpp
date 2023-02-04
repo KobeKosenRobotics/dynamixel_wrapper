@@ -4,6 +4,8 @@
 #include "class_exc_arm_property.hpp"
 #include "class_exc_joint.hpp"
 
+// #include "class_quaternion.hpp"
+
 #include <ros/ros.h>
 
 #include <tf2/LinearMath/Quaternion.h>
@@ -408,10 +410,10 @@ Eigen::Matrix<double, 3, 1> ExCArm::getPosition()
 
 Eigen::Matrix<double, 3, 1> ExCArm::getEuler()
 {
-    _rotation_all << exc_arm_property.getRotationMatrix(0, _sensor_angle(0,0));
-    for(int i = 1; i < JOINT_NUMBER; i++)
+    _rotation_all = exc_arm_property.getRotationMatrix(JOINT_NUMBER, 0.0);
+    for(int i = JOINT_NUMBER-1; i >= 0; i--)
     {
-        _rotation_all = _rotation_all*exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0));
+        _rotation_all = exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*_rotation_all;
     }
 
     // ZYX Euler
