@@ -57,6 +57,7 @@ class ExCArmProperty
         Eigen::Matrix<double, 4, 4> _gst_zero;
         Eigen::Matrix<std::string, JOINT_NUMBER+1, 1> _joint_name;
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
+        Eigen::Matrix<double, JOINT_NUMBER, 2> _joint_angle_limit;
 
     public:
         ExCArmProperty();
@@ -69,6 +70,8 @@ class ExCArmProperty
             Eigen::Matrix<double, 3, 3> getRotationMatrixX(double angle);
             Eigen::Matrix<double, 3, 3> getRotationMatrixY(double angle);
             Eigen::Matrix<double, 3, 3> getRotationMatrixZ(double angle);
+        double getLowerAngleLimit(int joint_);
+        double getUpperAngleLimit(int joint_);
 
         // ExC Joint
         Eigen::Matrix<double, 3, 1> getQ(int joint);
@@ -84,6 +87,9 @@ class ExCArmProperty
 
         // Pseudo-Inverse Matrix
         Eigen::Matrix<double, JOINT_NUMBER, 6> getPseudoInverseMatrix(Eigen::Matrix<double, 6, JOINT_NUMBER> matrix_);
+
+        // Rank
+        int getRank(Eigen::Matrix<double, 6, JOINT_NUMBER> matrix_);
 };
 ExCArmProperty exc_arm_property;
 
@@ -121,6 +127,15 @@ ExCArmProperty::ExCArmProperty()
     0.0, 0.0, 0.0, 10.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 10.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 10.0;
+
+    _joint_angle_limit <<
+    -M_PI    ,   M_PI    ,
+    -M_PI/2.0,   M_PI/2.0,
+    -3.0*M_PI/4.0, M_PI/2.0,
+    -M_PI    ,   M_PI    ,
+    -M_PI/2.0,   M_PI/2.0,
+    -M_PI    ,   M_PI    ;
+
     #endif
 
     #ifndef DOF6
@@ -305,6 +320,16 @@ Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrixZ(double angle)
     return rotation_matrix_z_;
 }
 
+double ExCArmProperty::getLowerAngleLimit(int joint_)
+{
+    return _joint_angle_limit(joint_, 0);
+}
+
+double ExCArmProperty::getUpperAngleLimit(int joint_)
+{
+    return _joint_angle_limit(joint_,1);
+}
+
 // ExC Joint
 Eigen::Matrix<double, 3, 1> ExCArmProperty::getQ(int joint)
 {
@@ -357,6 +382,14 @@ Eigen::Matrix<double, JOINT_NUMBER, 6> ExCArmProperty::getPseudoInverseMatrix(Ei
     // std::cout << pseudo_inverse_matrix_*matrix_ << std::endl;
 
     return pseudo_inverse_matrix_;
+}
+
+int ExCArmProperty::getRank(Eigen::Matrix<double, 6, JOINT_NUMBER> matrix_)
+{
+    Eigen::FullPivLU<Eigen::MatrixXd> lu_decomp(matrix_);
+    int rank_ = lu_decomp.rank();
+
+    return rank_;
 }
 
 #endif

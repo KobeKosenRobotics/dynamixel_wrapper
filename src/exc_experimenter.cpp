@@ -71,16 +71,35 @@ void sequence()
     case 15:
         exc_arm.setCalculationMode(2);
         // exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 1.5, 0.0);
-        exc_arm.setTargetPose(random_number.getRandomNumber(-300.0, 300.0, 1.0), random_number.getRandomNumber(-300.0, 300.0, 1.0), random_number.getRandomNumber(100.0, 300.0, 1.0), random_number.getRandomNumber(-1.0, 1.0, 0.05), random_number.getRandomNumber(0.0, 1.5, 0.05), random_number.getRandomNumber(-1.0, 1.0, 0.05));
+        target_pose.position.x    = random_number.getRandomNumber(400.0, 500.0, 1.0),
+        target_pose.position.y    = random_number.getRandomNumber(-200.0, 200.0, 1.0),
+        target_pose.position.z    = random_number.getRandomNumber(350.0, 450.0, 1.0),
+        target_pose.orientation.z = random_number.getRandomNumber(-0.5, 0.5, 0.05),
+        target_pose.orientation.y = random_number.getRandomNumber(1.0, 1.5, 0.05),
+        target_pose.orientation.x = random_number.getRandomNumber(-0.5, 0.5, 0.05);
+        exc_arm.setTargetPose(target_pose);
+
         step = 20;
+
+        wait.reset();
         exc_arm.measurementStart();
 
+        break;
+
     case 20:
-        if(!wait.isWaiting(1.01*(exc_arm.getDurationTIme())))
+        if(!wait.isWaiting(1.5*(exc_arm.getDurationTime())))
         {
             exc_arm.measurementEnd();
             step = 5;
         }
+        else if(exc_arm.isSingularConfiguration() || !exc_arm.isWithinAngleLimit())
+        {
+            exc_arm.resetSingularConfiguration();
+            exc_arm.resetWithinAngleLimit();
+            step = 5;
+        }
+
+        break;
 
     default:
         break;

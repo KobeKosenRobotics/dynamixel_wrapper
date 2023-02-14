@@ -61,7 +61,7 @@ class ExCArm
         Eigen::Matrix<double, 6, 1> _target_pose_start;
         geometry_msgs::Pose _target_pose_old;
         ros::Time _time_start_move;
-        double _midpoint, _duration_time, _linear_velocity = 50;    // _liner_velocity[mm/s]
+        double _midpoint, _duration_time, _linear_velocity = 30;    // _liner_velocity[mm/s]
 
         // TimeDiff: Time Differentiation
         Eigen::Matrix<double, 6, 6> _time_diff_jacobian;
@@ -92,6 +92,8 @@ class ExCArm
         int _test_number = 0;
         ros::Time _calculation_time_start, _calculation_time_end;
         int _calculation_number = 0;
+        bool _singular_configuration = false;
+        bool _within_angle_limit = true;
 
     public:
         // Constructor
@@ -108,7 +110,12 @@ class ExCArm
         bool isInTargetPose();
         void measurementStart();
         void measurementEnd();
-        double getDurationTIme();
+        double getDurationTime();
+        bool isSingularConfiguration();
+        void resetSingularConfiguration();
+        bool isWithinAngleLimit();
+        void resetWithinAngleLimit();
+        Eigen::Matrix<double, 6, 1> getTargetPose();
 
         // Subscribe
         void setMotorEnable(std_msgs::Bool motor_enable);
@@ -135,6 +142,7 @@ class ExCArm
         std_msgs::Float32MultiArray getMotorAngularVelocityZero();
         std_msgs::Float32MultiArray getMotorAngularVelocity();
             void changeMotorAngularVelocity();
+                bool isWithinEmergencyAngleLimit();
                 void setMotorAngularVelocityZero();
                 void getMotorAngularVelocityByAngle();
                 void getMotorAngularVelocityByTimeDiff();
@@ -181,15 +189,20 @@ void ExCArm::print()
     // << std::endl
     // << _target_angle
 
-    // << std::endl
-    // << "sensor angle"
-    // << std::endl
-    // << _sensor_angle
+    << std::endl
+    << "sensor angle"
+    << std::endl
+    << _sensor_angle
 
-    << std::endl
-    << "pose"
-    << std::endl
-    << getPose()
+    // << std::endl
+    // << "pose"
+    // << std::endl
+    // << getPose()
+
+    // << std::endl
+    // << "target pose"
+    // << std::endl
+    // << _target_pose
 
     // << std::endl
     // << "time diff jacobian"
@@ -272,6 +285,8 @@ void ExCArm::measurementStart()
 {
     _total_calculation_time = 0.0;
     _calculation_number = 0;
+    // resetSingularConfiguration();
+    // resetWithinAngleLimit();
 }
 
 void ExCArm::measurementEnd()
@@ -281,22 +296,62 @@ void ExCArm::measurementEnd()
     std::cout
     << _calculation_mode << ", "
     << _test_number << ", "
-    << _total_calculation_time << ", "
+    << 1000*_total_calculation_time << ", "    // [ms]
     << _calculation_number << ", "
-    << _total_calculation_time/_calculation_number << ", "
+    << 1000*_total_calculation_time/_calculation_number << ", "    // [ms]
     << _pose_error(0,0) << ", "
     << _pose_error(1,0) << ", "
     << _pose_error(2,0) << ", "
     << _pose_error(3,0) << ", "
     << _pose_error(4,0) << ", "
     << _pose_error(5,0) << ","
+    << _target_pose(0,0) << ", "
+    << _target_pose(1,0) << ", "
+    << _target_pose(2,0) << ", "
+    << _target_pose(3,0) << ", "
+    << _target_pose(4,0) << ", "
+    << _target_pose(5,0) << ", "
     << std::endl;
+    // std::cout << _target_pose << std::endl << std::endl;
 
     _test_number++;
 }
-double ExCArm::getDurationTIme()
+double ExCArm::getDurationTime()
 {
     return _duration_time;
+}
+
+bool ExCArm::isSingularConfiguration()
+{
+    return _singular_configuration;
+}
+
+void ExCArm::resetSingularConfiguration()
+{
+    _singular_configuration = false;
+}
+
+bool ExCArm::isWithinAngleLimit()
+{
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        if((_sensor_angle(i,0) < exc_arm_property.getLowerAngleLimit(i)) || (exc_arm_property.getUpperAngleLimit(i) < _sensor_angle(i,0)))
+        {
+            _within_angle_limit = false;
+        }
+    }
+
+    return _within_angle_limit;
+}
+
+void ExCArm::resetWithinAngleLimit()
+{
+    _within_angle_limit = true;
+}
+
+Eigen::Matrix<double, 6, 1> ExCArm::getTargetPose()
+{
+    return _target_pose;
 }
 
 // Subscribe
@@ -386,7 +441,23 @@ Eigen::Matrix<double, 6, 1> ExCArm::getPose()
     transformStamped.transform.translation.y = _pose(1,0)/1000.0;
     transformStamped.transform.translation.z = _pose(2,0)/1000.0;
 
-    q.setRPY(_euler(2,0), _euler(1,0), _euler(0,0));
+    q.setRPY(_pose(5,0), _pose(4,0), _pose(3,0));
+    transformStamped.transform.rotation.x = q.x();
+    transformStamped.transform.rotation.y = q.y();
+    transformStamped.transform.rotation.z = q.z();
+    transformStamped.transform.rotation.w = q.w();
+
+    br.sendTransform(transformStamped);
+
+    // Target Pose
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "arm_base_link";
+    transformStamped.child_frame_id = "target_pose";
+    transformStamped.transform.translation.x = _target_pose(0,0)/1000.0;
+    transformStamped.transform.translation.y = _target_pose(1,0)/1000.0;
+    transformStamped.transform.translation.z = _target_pose(2,0)/1000.0;
+
+    q.setRPY(_target_pose(5,0), _target_pose(4,0), _target_pose(3,0));
     transformStamped.transform.rotation.x = q.x();
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
@@ -489,6 +560,11 @@ void ExCArm::changeMotorAngularVelocity()
         setMotorAngularVelocityZero();
         return;
     }
+    if(isWithinEmergencyAngleLimit())
+    {
+        setMotorAngularVelocityZero();
+        return;
+    }
 
     if(_calculation_mode == 1)
     {
@@ -514,6 +590,19 @@ void ExCArm::changeMotorAngularVelocity()
         getMotorAngularVelocityByAngle();
         return;
     }
+}
+
+bool ExCArm::isWithinEmergencyAngleLimit()
+{
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        if((_sensor_angle(i,0) < exc_arm_property.getLowerAngleLimit(i))-0.5 || (exc_arm_property.getUpperAngleLimit(i)+0.5 < _sensor_angle(i,0)))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void ExCArm::setMotorAngularVelocityZero()
@@ -561,6 +650,18 @@ Eigen::Matrix<double, 6, 6> ExCArm::getTimeDiffJacobian()
     _rotation_jacobian = getRotationJacobian();
 
     _time_diff_jacobian << _translation_jacobian, _rotation_jacobian;
+
+    // if(exc_arm_property.getRank(_time_diff_jacobian) < JOINT_NUMBER)
+    // {
+    //     _singular_configuration = true;
+    // }
+
+    #ifdef DOF6
+    if(fabs(_time_diff_jacobian.determinant()) < 0.001)
+    {
+        _singular_configuration = true;
+    }
+    #endif
 
     return _time_diff_jacobian;
 }
@@ -670,6 +771,18 @@ void ExCArm::replaceVariables()
 Eigen::Matrix<double, 6, JOINT_NUMBER> ExCArm::getExCJacobian()
 {
     _exc_jacobian = (getTransformationMatrix().inverse())*getExCJacobianBody();
+
+    // if(exc_arm_property.getRank(_exc_jacobian) < JOINT_NUMBER)
+    // {
+    //     _singular_configuration = true;
+    // }
+
+    #ifdef DOF6
+    if(fabs(_exc_jacobian.determinant()) < 0.001)
+    {
+        _singular_configuration = true;
+    }
+    #endif
 
     return _exc_jacobian;
 }
