@@ -32,6 +32,8 @@ ExCArm exc_arm;
 Wait wait;
 Random random_number;
 int step = 5;
+int challenge = 0;
+int success = 0;
 
 // Publisher
 std_msgs::Float32MultiArray CSAV;
@@ -71,15 +73,17 @@ void sequence()
     case 15:
         exc_arm.setCalculationMode(2);
         // exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 1.5, 0.0);
-        target_pose.position.x    = random_number.getRandomNumber(400.0, 500.0, 1.0),
+        target_pose.position.x    = random_number.getRandomNumber(200.0, 500.0, 1.0),
         target_pose.position.y    = random_number.getRandomNumber(-200.0, 200.0, 1.0),
-        target_pose.position.z    = random_number.getRandomNumber(350.0, 450.0, 1.0),
-        target_pose.orientation.z = random_number.getRandomNumber(-0.5, 0.5, 0.05),
+        target_pose.position.z    = random_number.getRandomNumber(200.0, 500.0, 1.0),
+        target_pose.orientation.z = random_number.getRandomNumber(-1.0, 1.0, 0.05),
         target_pose.orientation.y = random_number.getRandomNumber(1.0, 1.5, 0.05),
-        target_pose.orientation.x = random_number.getRandomNumber(-0.5, 0.5, 0.05);
+        target_pose.orientation.x = random_number.getRandomNumber(-1.0, 1.0, 0.05);
         exc_arm.setTargetPose(target_pose);
 
         step = 20;
+
+        challenge++;
 
         wait.reset();
         exc_arm.measurementStart();
@@ -87,9 +91,11 @@ void sequence()
         break;
 
     case 20:
-        if(!wait.isWaiting(1.5*(exc_arm.getDurationTime())))
+        // if(!wait.isWaiting(1.5*(exc_arm.getDurationTime())))
+        if(!wait.isWaiting(1.2*(exc_arm.getDurationTime())))
         {
             exc_arm.measurementEnd();
+            success++;
             step = 5;
         }
         else if(exc_arm.isSingularConfiguration() || !exc_arm.isWithinAngleLimit())
@@ -189,9 +195,13 @@ int main(int argc, char **argv)
             CMAV_pub.publish(exc_arm.getMotorAngularVelocityZero());
         }
 
+        if(success > 350) break;
+
         ros::spinOnce();
         loop_rate.sleep();
     }
+
+    std::cout << success << " / " << challenge << std::endl;
 
     return 0;
 }

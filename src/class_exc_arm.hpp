@@ -61,7 +61,7 @@ class ExCArm
         Eigen::Matrix<double, 6, 1> _target_pose_start;
         geometry_msgs::Pose _target_pose_old;
         ros::Time _time_start_move;
-        double _midpoint, _duration_time, _linear_velocity = 30;    // _liner_velocity[mm/s]
+        double _midpoint, _duration_time, _linear_velocity = 150;    // _liner_velocity[mm/s]
 
         // TimeDiff: Time Differentiation
         Eigen::Matrix<double, 6, 6> _time_diff_jacobian;
@@ -294,17 +294,17 @@ void ExCArm::measurementEnd()
     _pose_error = _target_pose - _pose;
 
     std::cout
-    << _calculation_mode << ", "
-    << _test_number << ", "
-    << 1000*_total_calculation_time << ", "    // [ms]
-    << _calculation_number << ", "
-    << 1000*_total_calculation_time/_calculation_number << ", "    // [ms]
-    << _pose_error(0,0) << ", "
-    << _pose_error(1,0) << ", "
-    << _pose_error(2,0) << ", "
-    << _pose_error(3,0) << ", "
-    << _pose_error(4,0) << ", "
-    << _pose_error(5,0) << ","
+    // << _calculation_mode << ", "
+    // << _test_number << ", "
+    // << 1000*_total_calculation_time << ", "    // [ms]
+    // << _calculation_number << ", "
+    // << 1000*_total_calculation_time/_calculation_number << ", "    // [ms]
+    // << _pose_error(0,0) << ", "
+    // << _pose_error(1,0) << ", "
+    // << _pose_error(2,0) << ", "
+    // << _pose_error(3,0) << ", "
+    // << _pose_error(4,0) << ", "
+    // << _pose_error(5,0) << ","
     << _target_pose(0,0) << ", "
     << _target_pose(1,0) << ", "
     << _target_pose(2,0) << ", "
