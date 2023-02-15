@@ -29,6 +29,8 @@
 // #define DOF7
 // #define DOF8
 
+// #define COLLECT_RANDOM_TARGET
+
 #ifdef DOF6
 const int JOINT_NUMBER = 6;
 #endif
@@ -129,12 +131,12 @@ ExCArmProperty::ExCArmProperty()
     0.0, 0.0, 0.0, 0.0, 0.0, 10.0;
 
     _joint_angle_limit <<
-    -M_PI    ,   M_PI    ,
-    -M_PI/2.0,   M_PI/2.0,
+    -    M_PI    , M_PI    ,
+    -    M_PI/2.0, M_PI/2.0,
     -3.0*M_PI/4.0, M_PI/2.0,
-    -M_PI    ,   M_PI    ,
-    -M_PI/2.0,   M_PI/2.0,
-    -M_PI    ,   M_PI    ;
+    -    M_PI    , M_PI    ,
+    -    M_PI/2.0, M_PI/2.0,
+    -    M_PI    , M_PI    ;
 
     #endif
 

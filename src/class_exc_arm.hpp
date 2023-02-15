@@ -89,7 +89,7 @@ class ExCArm
         // Experimentation
         double _total_calculation_time = 0.0;
         Eigen::Matrix<double, 6, 1> _pose_error;
-        int _test_number = 0;
+        int _test_number = 178;
         ros::Time _calculation_time_start, _calculation_time_end;
         int _calculation_number = 0;
         bool _singular_configuration = false;
@@ -184,50 +184,15 @@ void ExCArm::print()
 {
     std::cout
 
-    // << std::endl
-    // << "target angle"
-    // << std::endl
-    // << _target_angle
-
     << std::endl
     << "sensor angle"
     << std::endl
     << _sensor_angle
 
-    // << std::endl
-    // << "pose"
-    // << std::endl
-    // << getPose()
-
-    // << std::endl
-    // << "target pose"
-    // << std::endl
-    // << _target_pose
-
-    // << std::endl
-    // << "time diff jacobian"
-    // << std::endl
-    // << getTimeDiffJacobian()
-
-    // << std::endl
-    // << "exc jacobian"
-    // << std::endl
-    // << getExCJacobian()
-
-    // << std::endl
-    // << "mid target pose"
-    // << std::endl
-    // << getMidTargetPoseLinearInterpolation()
-
-    // << std::endl
-    // << "motor angular velocity"
-    // << std::endl
-    // << _motor_angular_velocity
-
-    // << std::endl
-    // << "exc jacobian"
-    // << std::endl
-    // << getExCJacobian()
+    << std::endl
+    << "pose"
+    << std::endl
+    << getPose()
 
     << std::endl;
 }
@@ -285,8 +250,6 @@ void ExCArm::measurementStart()
 {
     _total_calculation_time = 0.0;
     _calculation_number = 0;
-    // resetSingularConfiguration();
-    // resetWithinAngleLimit();
 }
 
 void ExCArm::measurementEnd()
@@ -294,6 +257,7 @@ void ExCArm::measurementEnd()
     _pose_error = _target_pose - _pose;
 
     std::cout
+    #ifndef COLLECT_RANDOM_TARGET
     << _calculation_mode << ", "
     << _test_number << ", "
     << 1000*_total_calculation_time << ", "    // [ms]
@@ -304,15 +268,15 @@ void ExCArm::measurementEnd()
     << _pose_error(2,0) << ", "
     << _pose_error(3,0) << ", "
     << _pose_error(4,0) << ", "
-    << _pose_error(5,0) << ","
+    << _pose_error(5,0) << ", "
+    #endif
     << _target_pose(0,0) << ", "
     << _target_pose(1,0) << ", "
     << _target_pose(2,0) << ", "
     << _target_pose(3,0) << ", "
     << _target_pose(4,0) << ", "
-    << _target_pose(5,0) << ", "
+    << _target_pose(5,0) << ","
     << std::endl;
-    // std::cout << _target_pose << std::endl << std::endl;
 
     _test_number++;
 }
@@ -562,6 +526,7 @@ void ExCArm::changeMotorAngularVelocity()
     }
     if(isWithinEmergencyAngleLimit())
     {
+        std::cout << "ERROR: emergency angle limit" << std::endl;
         setMotorAngularVelocityZero();
         return;
     }

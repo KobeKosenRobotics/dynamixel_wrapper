@@ -32,9 +32,9 @@ ExCArm exc_arm;
 Wait wait;
 Random random_number;
 int step = 5;
-int challenge = 0;
+int challenge = 180;
 int success = 0;
-Eigen::Matrix<double, 351, 6> reachable_target_pose;
+Eigen::Matrix<double, 350, 6> reachable_target_pose;
 
 // Publisher
 std_msgs::Float32MultiArray CSAV;
@@ -72,20 +72,24 @@ void sequence()
         break;
 
     case 15:
-        exc_arm.setCalculationMode(1);
+        exc_arm.setCalculationMode(2);
         // exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 1.5, 0.0);
-        // target_pose.position.x    = random_number.getRandomNumber(200.0, 500.0, 1.0),
-        // target_pose.position.y    = random_number.getRandomNumber(-200.0, 200.0, 1.0),
-        // target_pose.position.z    = random_number.getRandomNumber(200.0, 500.0, 1.0),
-        // target_pose.orientation.z = random_number.getRandomNumber(-1.0, 1.0, 0.05),
-        // target_pose.orientation.y = random_number.getRandomNumber(1.0, 1.5, 0.05),
-        // target_pose.orientation.x = random_number.getRandomNumber(-1.0, 1.0, 0.05);
+        #ifdef COLLECT_RANDOM_TARGET
+        target_pose.position.x    = random_number.getRandomNumber(200.0, 500.0, 1.0),
+        target_pose.position.y    = random_number.getRandomNumber(-200.0, 200.0, 1.0),
+        target_pose.position.z    = random_number.getRandomNumber(200.0, 500.0, 1.0),
+        target_pose.orientation.z = random_number.getRandomNumber(-1.0, 1.0, 0.05),
+        target_pose.orientation.y = random_number.getRandomNumber(1.0, 1.5, 0.05),
+        target_pose.orientation.x = random_number.getRandomNumber(-1.0, 1.0, 0.05);
+        #endif
+        #ifndef COLLECT_RANDOM_TARGET
         target_pose.position.x    = reachable_target_pose(challenge,0);
         target_pose.position.y    = reachable_target_pose(challenge,1);
         target_pose.position.z    = reachable_target_pose(challenge,2);
         target_pose.orientation.z = reachable_target_pose(challenge,3);
         target_pose.orientation.y = reachable_target_pose(challenge,4);
         target_pose.orientation.x = reachable_target_pose(challenge,5);
+        #endif
         exc_arm.setTargetPose(target_pose);
 
         step = 20;
@@ -98,8 +102,7 @@ void sequence()
         break;
 
     case 20:
-        // if(!wait.isWaiting(1.5*(exc_arm.getDurationTime())))
-        if(!wait.isWaiting(1.2*(exc_arm.getDurationTime())))
+        if(!wait.isWaiting(1.5*(exc_arm.getDurationTime())))
         {
             exc_arm.measurementEnd();
             success++;
@@ -410,7 +413,7 @@ int main(int argc, char **argv)
     440, -159, 422, 0.25, 1.15, -0.25,
     497, -56, 418, -0.25, 1.35, 0.25,
     385, 196, 483, 0.7, 1.5, 0.15,
-    492, 114, 493, 0.05, 1.2, 0.65,
+    // 492, 114, 493, 0.05, 1.2, 0.65,
     397, -72, 467, -0.95, 1.1, 0.2,
     483, -175, 357, -0.85, 1.5, -0.2,
     361, 101, 498, 0.1, 1.5, 0.7,
@@ -556,7 +559,8 @@ int main(int argc, char **argv)
             CMAV_pub.publish(exc_arm.getMotorAngularVelocityZero());
         }
 
-        // if(success > 350) break;
+        if(success > 150) break;
+        else if(challenge >= 350) break;
 
         ros::spinOnce();
         loop_rate.sleep();
