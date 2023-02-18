@@ -25,9 +25,10 @@
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
-#define DOF6
+// #define DOF6
 // #define DOF7
 // #define DOF8
+#define DOFN
 
 // #define COLLECT_RANDOM_TARGET
 
@@ -45,6 +46,10 @@ const int JOINT_NUMBER = 7;
 const int JOINT_NUMBER = 8;
 #endif
 
+#ifdef DOFN
+const int JOINT_NUMBER = 100;
+#endif
+
 #endif
 
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
@@ -59,6 +64,7 @@ class ExCArmProperty
         Eigen::Matrix<double, 4, 4> _gst_zero;
         Eigen::Matrix<std::string, JOINT_NUMBER+1, 1> _joint_name;
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
+        Eigen::Matrix<double, JOINT_NUMBER, 1> _initial_target_angle;
         Eigen::Matrix<double, JOINT_NUMBER, 2> _joint_angle_limit;
 
     public:
@@ -72,6 +78,7 @@ class ExCArmProperty
             Eigen::Matrix<double, 3, 3> getRotationMatrixX(double angle);
             Eigen::Matrix<double, 3, 3> getRotationMatrixY(double angle);
             Eigen::Matrix<double, 3, 3> getRotationMatrixZ(double angle);
+        Eigen::Matrix<double, JOINT_NUMBER, 1> getInitialTargetAngle();
         double getLowerAngleLimit(int joint_);
         double getUpperAngleLimit(int joint_);
 
@@ -214,6 +221,38 @@ ExCArmProperty::ExCArmProperty()
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
     #endif
 
+    #ifdef DOFN
+    for(int i = 0; i < JOINT_NUMBER+1; i++)
+    {
+        _link(i,2) = 300.0;
+
+        if(i < JOINT_NUMBER)
+        {
+            if(i%2 == 0)
+            {
+                _rotation_axis(2,i) = 1.0;
+            }
+            else
+            {
+                _rotation_axis(1,i) = 1.0;
+                _initial_target_angle(i,0) = 0.1;
+            }
+
+            _joint_angle_limit(i,0) = -M_PI/2.0;
+            _joint_angle_limit(i,1) = M_PI/2.0;
+        }
+
+        std::stringstream ss;
+        ss << "joint" << i;
+        _joint_name(i,0) = ss.str();
+
+    }
+
+    _proportional_gain_angle_operating.setIdentity();
+
+    _joint_position = link2JointPosition(_link);
+    #endif
+
     #endif
 
     _gst_zero_rotation_matrix <<
@@ -320,6 +359,11 @@ Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrixZ(double angle)
     sin(angle),  cos(angle), 0.0,
            0.0,         0.0, 1.0;
     return rotation_matrix_z_;
+}
+
+Eigen::Matrix<double, JOINT_NUMBER, 1> ExCArmProperty::getInitialTargetAngle()
+{
+    return _initial_target_angle;
 }
 
 double ExCArmProperty::getLowerAngleLimit(int joint_)

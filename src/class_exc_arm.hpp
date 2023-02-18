@@ -61,7 +61,7 @@ class ExCArm
         Eigen::Matrix<double, 6, 1> _target_pose_start;
         geometry_msgs::Pose _target_pose_old;
         ros::Time _time_start_move;
-        double _midpoint, _duration_time, _linear_velocity = 30;    // _liner_velocity[mm/s]
+        double _midpoint, _duration_time, _linear_velocity = 1500;    // _liner_velocity[mm/s]    // Real World 30[mm]
 
         // TimeDiff: Time Differentiation
         Eigen::Matrix<double, 6, 6> _time_diff_jacobian;
@@ -105,6 +105,7 @@ class ExCArm
         // Experimentation
         void setCalculationMode(int calculation_mode_);
         void setTargetAngle(double angle0_, double angle1_, double angle2_, double angle3_, double angle4_, double angle5_);
+        void setTargetAngle(Eigen::Matrix<double, JOINT_NUMBER, 1> target_angle_);
         void setTargetPose(double x_, double y_, double z_, double ez_, double ey_, double ex_);
         bool isInTargetAngle();
         bool isInTargetPose();
@@ -194,6 +195,11 @@ void ExCArm::print()
     << std::endl
     << getPose()
 
+    <<std::endl
+    << "initial"
+    << std::endl
+    << exc_arm_property.getInitialTargetAngle()
+
     << std::endl;
 }
 
@@ -213,6 +219,11 @@ void ExCArm::setTargetAngle(double angle0_, double angle1_, double angle2_, doub
     _target_angle(5,0) = angle5_;
 }
 
+void ExCArm::setTargetAngle(Eigen::Matrix<double, JOINT_NUMBER, 1> target_angle_)
+{
+    _target_angle = target_angle_;
+}
+
 void ExCArm::setTargetPose(double x_, double y_, double z_, double ez_, double ey_, double ex_)
 {
     _target_pose(0,0) = x_;
@@ -227,7 +238,7 @@ void ExCArm::setTargetPose(double x_, double y_, double z_, double ez_, double e
 bool ExCArm::isInTargetAngle()
 {
     Eigen::Matrix<double, JOINT_NUMBER, 1> tolerance_angle_;
-    tolerance_angle_ << 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
+    tolerance_angle_.setConstant(0.01);
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
         if(fabs(_target_angle(i,0) - _sensor_angle(i,0)) > tolerance_angle_(i,0)) return false;
@@ -239,7 +250,7 @@ bool ExCArm::isInTargetPose()
 {
     Eigen::Matrix<double, 6, 1> tolerance_pose_;
     tolerance_pose_ << 0.01, 0.01, 0.01, 0.001, 0.001, 0.001;
-    for(int i = 0; i < 6; i++)
+    for(int i = 0; i < JOINT_NUMBER; i++)
     {
         if(fabs(_target_pose(i,0) - _pose(i,0)) > tolerance_pose_(i,0)) return false;
     }

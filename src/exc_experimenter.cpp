@@ -60,11 +60,17 @@ void sequence()
 
     case 5:
         exc_arm.setCalculationMode(0);
+        #ifdef DOF6
         exc_arm.setTargetAngle(0.0, 0.2, 0.7, 0.0, 0.2, 0.0);
+        #endif
+        #ifdef DOFN
+        exc_arm.setTargetAngle(exc_arm_property.getInitialTargetAngle());
+        #endif
         step = 10;
         break;
 
     case 10:
+        // if(exc_arm.isInTargetAngle())
         if(exc_arm.isInTargetAngle())
         {
             step = 15;
@@ -73,7 +79,7 @@ void sequence()
 
     case 15:
         exc_arm.setCalculationMode(2);
-        // exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 1.5, 0.0);
+        exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 0.0, 0.0);
         #ifdef COLLECT_RANDOM_TARGET
         target_pose.position.x    = random_number.getRandomNumber(200.0, 500.0, 1.0),
         target_pose.position.y    = random_number.getRandomNumber(-200.0, 200.0, 1.0),
@@ -83,12 +89,12 @@ void sequence()
         target_pose.orientation.x = random_number.getRandomNumber(-1.0, 1.0, 0.05);
         #endif
         #ifndef COLLECT_RANDOM_TARGET
-        target_pose.position.x    = reachable_target_pose(challenge,0);
-        target_pose.position.y    = reachable_target_pose(challenge,1);
-        target_pose.position.z    = reachable_target_pose(challenge,2);
-        target_pose.orientation.z = reachable_target_pose(challenge,3);
-        target_pose.orientation.y = reachable_target_pose(challenge,4);
-        target_pose.orientation.x = reachable_target_pose(challenge,5);
+        // target_pose.position.x    = reachable_target_pose(challenge,0);
+        // target_pose.position.y    = reachable_target_pose(challenge,1);
+        // target_pose.position.z    = reachable_target_pose(challenge,2);
+        // target_pose.orientation.z = reachable_target_pose(challenge,3);
+        // target_pose.orientation.y = reachable_target_pose(challenge,4);
+        // target_pose.orientation.x = reachable_target_pose(challenge,5);
         #endif
         exc_arm.setTargetPose(target_pose);
 
