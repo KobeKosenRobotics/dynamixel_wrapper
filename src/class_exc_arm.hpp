@@ -61,7 +61,7 @@ class ExCArm
         Eigen::Matrix<double, 6, 1> _target_pose_start;
         geometry_msgs::Pose _target_pose_old;
         ros::Time _time_start_move;
-        double _midpoint, _duration_time, _linear_velocity = 1500;    // _liner_velocity[mm/s]    // Real World 30[mm]
+        double _midpoint, _duration_time, _linear_velocity = 50;    // _liner_velocity[mm/s]    // Real World 30[mm]
 
         // TimeDiff: Time Differentiation
         Eigen::Matrix<double, 6, 6> _time_diff_jacobian;
@@ -89,7 +89,7 @@ class ExCArm
         // Experimentation
         double _total_calculation_time = 0.0;
         Eigen::Matrix<double, 6, 1> _pose_error;
-        int _test_number = 178;
+        int _test_number = 0;
         ros::Time _calculation_time_start, _calculation_time_end;
         int _calculation_number = 0;
         bool _singular_configuration = false;

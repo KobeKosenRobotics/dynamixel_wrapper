@@ -32,7 +32,7 @@ ExCArm exc_arm;
 Wait wait;
 Random random_number;
 int step = 5;
-int challenge = 180;
+int challenge = 0;
 int success = 0;
 Eigen::Matrix<double, 350, 6> reachable_target_pose;
 
@@ -79,7 +79,7 @@ void sequence()
 
     case 15:
         exc_arm.setCalculationMode(2);
-        exc_arm.setTargetPose(500.0, 0.0, 500.0, 0.0, 0.0, 0.0);
+        exc_arm.setTargetPose(600.0, 0.0, 600.0, 0.0, 1.2, 0.0);
         #ifdef COLLECT_RANDOM_TARGET
         target_pose.position.x    = random_number.getRandomNumber(200.0, 500.0, 1.0),
         target_pose.position.y    = random_number.getRandomNumber(-200.0, 200.0, 1.0),
@@ -96,7 +96,7 @@ void sequence()
         // target_pose.orientation.y = reachable_target_pose(challenge,4);
         // target_pose.orientation.x = reachable_target_pose(challenge,5);
         #endif
-        exc_arm.setTargetPose(target_pose);
+        // exc_arm.setTargetPose(target_pose);
 
         step = 20;
 
@@ -108,7 +108,7 @@ void sequence()
         break;
 
     case 20:
-        if(!wait.isWaiting(1.5*(exc_arm.getDurationTime())))
+        if(!wait.isWaiting(1.2*(exc_arm.getDurationTime())))
         {
             exc_arm.measurementEnd();
             success++;
@@ -565,14 +565,14 @@ int main(int argc, char **argv)
             CMAV_pub.publish(exc_arm.getMotorAngularVelocityZero());
         }
 
-        if(success > 150) break;
+        if(success > 10) break;
         else if(challenge >= 350) break;
 
         ros::spinOnce();
         loop_rate.sleep();
     }
 
-    std::cout << success << " / " << challenge << std::endl;
+    std::cout << "DOF" << JOINT_NUMBER << std::endl;
 
     return 0;
 }

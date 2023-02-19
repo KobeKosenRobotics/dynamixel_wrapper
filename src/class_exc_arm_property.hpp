@@ -47,7 +47,7 @@ const int JOINT_NUMBER = 8;
 #endif
 
 #ifdef DOFN
-const int JOINT_NUMBER = 100;
+const int JOINT_NUMBER = 30;
 #endif
 
 #endif
@@ -224,7 +224,7 @@ ExCArmProperty::ExCArmProperty()
     #ifdef DOFN
     for(int i = 0; i < JOINT_NUMBER+1; i++)
     {
-        _link(i,2) = 300.0;
+        _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
 
         if(i < JOINT_NUMBER)
         {
@@ -238,8 +238,8 @@ ExCArmProperty::ExCArmProperty()
                 _initial_target_angle(i,0) = 0.1;
             }
 
-            _joint_angle_limit(i,0) = -M_PI/2.0;
-            _joint_angle_limit(i,1) = M_PI/2.0;
+            _joint_angle_limit(i,0) = -M_PI;
+            _joint_angle_limit(i,1) = M_PI;
         }
 
         std::stringstream ss;
