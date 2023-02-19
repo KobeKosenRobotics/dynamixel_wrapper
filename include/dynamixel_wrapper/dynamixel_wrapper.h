@@ -73,6 +73,9 @@ class dynamixel_wrapper{
     double getPresentCurrent(){ return read_signed(motor_config_.present_current)*motor_config_.current_scaling_factor; }
     double getPresentVelocity(){ return read_signed(motor_config_.present_velocity)*motor_config_.velocity_scaling_factor; }
     double getPresentPosition(){ return read_signed(motor_config_.present_position)*360.0f/motor_config_.resolution; }
+    double getGoalCurrent(){ return read_signed(motor_config_.goal_current)*motor_config_.current_scaling_factor; }
+    double getGoalVelocity(){ return read_signed(motor_config_.goal_velocity)*motor_config_.velocity_scaling_factor; }
+    double getGoalPosition(){ return read_signed(motor_config_.goal_position)*360.0f/motor_config_.resolution; }
     double getPresentTemperature(){ return read(motor_config_.present_temperature); }
     private:
     int id_;
