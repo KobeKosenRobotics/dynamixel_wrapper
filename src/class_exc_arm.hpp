@@ -52,6 +52,7 @@ class ExCArm
         Eigen::Matrix<double, 6, 1> _pose;
         Eigen::Matrix<double, 3, 1> _position, _euler;
         Eigen::Matrix<double, 3, 3> _rotation_all;
+        Eigen::Matrix<double, 4, 4> _homogeneous_transformation_matrix;
 
         // Inverse Kinematics
         double _proportional_gain = 20.0;
@@ -390,11 +391,43 @@ double ExCArm::getDistance()
 // Forward Kinematics
 Eigen::Matrix<double, 6, 1> ExCArm::getPose()
 {
-    getPosition();
-    getEuler();
-    _pose(0,0) = _position(0,0);
-    _pose(1,0) = _position(1,0);
-    _pose(2,0) = _position(2,0);
+    // getPosition();
+    // getEuler();
+    // _pose(0,0) = _position(0,0);
+    // _pose(1,0) = _position(1,0);
+    // _pose(2,0) = _position(2,0);
+    // _pose(3,0) = _euler(0,0);
+    // _pose(4,0) = _euler(1,0);
+    // _pose(5,0) = _euler(2,0);
+
+    _homogeneous_transformation_matrix.setIdentity();
+
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        _homogeneous_transformation_matrix = _homogeneous_transformation_matrix * exc_joint[i].getExpXiHatTheta(_sensor_angle(i,0));
+    }
+    _homogeneous_transformation_matrix = _homogeneous_transformation_matrix * exc_arm_property.getGstZero();
+
+    _pose(0,0) = _homogeneous_transformation_matrix(0,3);
+    _pose(1,0) = _homogeneous_transformation_matrix(1,3);
+    _pose(2,0) = _homogeneous_transformation_matrix(2,3);
+
+    _rotation_all <<
+    _homogeneous_transformation_matrix(0,0), _homogeneous_transformation_matrix(0,1), _homogeneous_transformation_matrix(0,2),
+    _homogeneous_transformation_matrix(1,0), _homogeneous_transformation_matrix(1,1), _homogeneous_transformation_matrix(1,2),
+    _homogeneous_transformation_matrix(2,0), _homogeneous_transformation_matrix(2,1), _homogeneous_transformation_matrix(2,2);
+
+    _euler(1,0) = -asin(_homogeneous_transformation_matrix(2,0));
+    _euler(0,0) = acos(_homogeneous_transformation_matrix(0,0)/cos(_euler(1,0)));
+    if(_homogeneous_transformation_matrix(1,0)/cos(_euler(1,0)) < 0) _euler(0,0) *= (-1);
+    _euler(2,0) = acos(_homogeneous_transformation_matrix(2,2)/cos(_euler(1,0)));
+    if(_homogeneous_transformation_matrix(2,1)/cos(_euler(1,0)) < 0) _euler(2,0) *= (-1);
+
+    for(int i = 0; i < 3; i++)
+    {
+        if(isnan(_euler(i,0))) _euler(i,0) = 0.0;
+    }
+
     _pose(3,0) = _euler(0,0);
     _pose(4,0) = _euler(1,0);
     _pose(5,0) = _euler(2,0);
@@ -451,11 +484,11 @@ Eigen::Matrix<double, 3, 1> ExCArm::getPosition()
 
 Eigen::Matrix<double, 3, 1> ExCArm::getEuler()
 {
-    _rotation_all = exc_arm_property.getRotationMatrix(JOINT_NUMBER, 0.0);
-    for(int i = JOINT_NUMBER-1; i >= 0; i--)
-    {
-        _rotation_all = exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*_rotation_all;
-    }
+    // _rotation_all = exc_arm_property.getRotationMatrix(JOINT_NUMBER, 0.0);
+    // for(int i = JOINT_NUMBER-1; i >= 0; i--)
+    // {
+    //     _rotation_all = exc_arm_property.getRotationMatrix(i, _sensor_angle(i,0))*_rotation_all;
+    // }
 
     // ZYX Euler
     _euler(1,0) = -asin(_rotation_all(2,0));
