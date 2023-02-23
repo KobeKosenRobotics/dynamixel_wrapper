@@ -32,14 +32,12 @@
 
 #ifdef DOF6
 const int JOINT_NUMBER = 6;
-const int CHAIN_NUMBER = 1;
 #endif
 
 #ifndef DOF6
 
 #ifdef DOFN
-const int JOINT_NUMBER = 10;
-const int CHAIN_NUMBER = 2;
+const int JOINT_NUMBER = 30;
 #endif
 
 #endif
@@ -49,17 +47,15 @@ const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0
 class ExCArmProperty
 {
     private:
-        Eigen::Matrix<double, JOINT_NUMBER+CHAIN_NUMBER, 3> _link;
-        Eigen::Matrix<double, 3, JOINT_NUMBER+CHAIN_NUMBER> _joint_position;
+        Eigen::Matrix<double, JOINT_NUMBER+1, 3> _link;
+        Eigen::Matrix<double, 3, JOINT_NUMBER+1> _joint_position;
         Eigen::Matrix<double, 3, JOINT_NUMBER+1> _translation_axis, _rotation_axis;
         Eigen::Matrix<double, 3, 3> _gst_zero_rotation_matrix;
         Eigen::Matrix<double, 4, 4> _gst_zero;
-        Eigen::Matrix<std::string, JOINT_NUMBER+CHAIN_NUMBER+CHAIN_NUMBER, 1> _joint_name;
+        Eigen::Matrix<std::string, JOINT_NUMBER+1, 1> _joint_name;
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
         Eigen::Matrix<double, JOINT_NUMBER, 1> _initial_target_angle;
         Eigen::Matrix<double, JOINT_NUMBER, 2> _joint_angle_limit;
-        Eigen::Matrix<int, CHAIN_NUMBER, JOINT_NUMBER> _chain_matrix;
-        Eigen::Matrix<int, CHAIN_NUMBER, JOINT_NUMBER+1> _chain_joint_matrix;
 
     public:
         ExCArmProperty();
@@ -93,9 +89,6 @@ class ExCArmProperty
 
         // Rank
         int getRank(Eigen::Matrix<double, 6, JOINT_NUMBER> matrix_);
-
-        // Chain Matrix
-        Eigen::Matrix<int, CHAIN_NUMBER, JOINT_NUMBER+1> getChainJointMatrix(Eigen::Matrix<int, CHAIN_NUMBER, JOINT_NUMBER> &chain_matrix_);
 };
 ExCArmProperty exc_arm_property;
 
@@ -142,12 +135,6 @@ ExCArmProperty::ExCArmProperty()
     -    M_PI/2.0, M_PI/2.0,
     -    M_PI    , M_PI    ;
 
-    _chain_matrix <<
-    1, 1, 1, 1, 1, 1;
-
-    _chain_joint_matrix <<
-    0, 1, 2, 3, 4, 5, 6;
-
     #endif
 
     #ifndef DOF6
@@ -155,8 +142,8 @@ ExCArmProperty::ExCArmProperty()
     #ifdef DOFN
     for(int i = 0; i < JOINT_NUMBER+1; i++)
     {
-        _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
-        // _link(i,2) = 300.0;
+        // _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
+        _link(i,2) = 300.0;
 
         if(i < JOINT_NUMBER)
         {
@@ -183,13 +170,6 @@ ExCArmProperty::ExCArmProperty()
     _proportional_gain_angle_operating.setIdentity();
 
     _joint_position = link2JointPosition(_link);
-
-    _chain_matrix <<
-    1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
-    1, 1, 1, 1, 1, 1, 0, 0, 1, 1;
-
-    _chain_joint_matrix = getChainJointMatrix(_chain_matrix);
-
     #endif
 
     #endif
@@ -368,26 +348,6 @@ int ExCArmProperty::getRank(Eigen::Matrix<double, 6, JOINT_NUMBER> matrix_)
     int rank_ = lu_decomp.rank();
 
     return rank_;
-}
-
-// Chain Matrix
-Eigen::Matrix<int, CHAIN_NUMBER, JOINT_NUMBER+1> ExCArmProperty::getChainJointMatrix(Eigen::Matrix<int, CHAIN_NUMBER, JOINT_NUMBER> &chain_matrix_)
-{
-    // for(int chain = 0; chain < CHAIN_NUMBER; chain++)
-    // {
-    //     for(int joint = 0; joint < JOINT_NUMBER+1)
-    //     {
-    //         if(chain_matrix_(chain,joint) == 1)
-    //         {
-    //             _chain_joint_matrix(chain,)
-    //         }
-    //     }
-    // }
-    // _chain_joint_matrix <<
-    // 0, 1, 2, 3, 4, 5, 6, 7, 10, -1, -1,
-    // 0, 1, 2, 3, 4, 5, 8, 9, 11, -1, -1;
-
-    return _chain_joint_matrix;
 }
 
 #endif
