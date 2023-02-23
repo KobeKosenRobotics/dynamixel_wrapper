@@ -25,10 +25,8 @@
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
-// #define DOF6
-// #define DOF7
-// #define DOF8
-#define DOFN
+#define DOF6
+// #define DOFN
 
 // #define COLLECT_RANDOM_TARGET
 
@@ -37,14 +35,6 @@ const int JOINT_NUMBER = 6;
 #endif
 
 #ifndef DOF6
-
-#ifdef DOF7
-const int JOINT_NUMBER = 7;
-#endif
-
-#ifdef DOF8
-const int JOINT_NUMBER = 8;
-#endif
 
 #ifdef DOFN
 const int JOINT_NUMBER = 30;
@@ -149,82 +139,11 @@ ExCArmProperty::ExCArmProperty()
 
     #ifndef DOF6
 
-    #ifdef DOF7
-    _link <<
-      0.0, 0.0, 159.0,
-      0.0, 0.0,   0.0,
-     30.0, 0.0, 264.0,
-    -30.0, 0.0, 258.0,
-      0.0, 0.0,   0.0,
-      0.0, 0.0, 123.0,
-      0.0, 0.0,   0.0,
-      0.0, 0.0, 100.0;
-
-    _joint_position = link2JointPosition(_link);
-
-    _translation_axis <<
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0;
-
-    _rotation_axis <<
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
-    1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0;
-
-    _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7";
-
-    _proportional_gain_angle_operating <<
-    1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
-    #endif
-
-    #ifdef DOF8
-    _link <<
-    0.0, 0.0, 100.0,
-    0.0, 0.0, 100.0,
-    0.0, 0.0, 100.0,
-    0.0, 0.0, 100.0,
-    0.0, 0.0, 100.0,
-    0.0, 0.0, 100.0,
-    0.0, 0.0, 100.0,
-    0.0, 0.0, 100.0,
-    0.0, 0.0, 100.0;
-
-    _joint_position = link2JointPosition(_link);
-
-    _translation_axis <<
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0;
-
-    _rotation_axis <<
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0,
-    1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0;
-
-    _joint_name << "joint0", "joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7", "joint8";
-
-    _proportional_gain_angle_operating <<
-    1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0;
-    #endif
-
     #ifdef DOFN
     for(int i = 0; i < JOINT_NUMBER+1; i++)
     {
-        _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
+        // _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
+        _link(i,2) = 300.0;
 
         if(i < JOINT_NUMBER)
         {
@@ -255,10 +174,7 @@ ExCArmProperty::ExCArmProperty()
 
     #endif
 
-    _gst_zero_rotation_matrix <<
-    1.0, 0.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 0.0, 1.0;
+    _gst_zero_rotation_matrix.setIdentity();
 
     _gst_zero <<
     _gst_zero_rotation_matrix(0,0), _gst_zero_rotation_matrix(0,1), _gst_zero_rotation_matrix(0,2), _joint_position(0, JOINT_NUMBER),
@@ -322,11 +238,7 @@ Eigen::Matrix<double, 3, 3> ExCArmProperty::getRotationMatrix(int joint, double 
     }
     else
     {
-        rotation_matrix_ <<
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0;
-        // TODO: Write the identity matrix as a function of Eigen
+        rotation_matrix_.setIdentity();
     }
     return rotation_matrix_;
 }

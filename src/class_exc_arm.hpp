@@ -61,7 +61,7 @@ class ExCArm
         Eigen::Matrix<double, 6, 1> _target_pose_start;
         geometry_msgs::Pose _target_pose_old;
         ros::Time _time_start_move;
-        double _midpoint, _duration_time, _linear_velocity = 50;    // _liner_velocity[mm/s]    // Real World 30[mm]
+        double _midpoint, _duration_time, _linear_velocity = 300;    // _liner_velocity[mm/s]    // Real World 30[mm]
 
         // TimeDiff: Time Differentiation
         Eigen::Matrix<double, 6, 6> _time_diff_jacobian;
@@ -186,7 +186,7 @@ void ExCArm::print()
     std::cout
 
     << std::endl
-    << "sensor angle"
+    << "angle"
     << std::endl
     << _sensor_angle
 
@@ -194,11 +194,6 @@ void ExCArm::print()
     << "pose"
     << std::endl
     << getPose()
-
-    <<std::endl
-    << "initial"
-    << std::endl
-    << exc_arm_property.getInitialTargetAngle()
 
     << std::endl;
 }

@@ -79,7 +79,7 @@ void sequence()
 
     case 15:
         exc_arm.setCalculationMode(2);
-        exc_arm.setTargetPose(600.0, 0.0, 600.0, 0.0, 1.2, 0.0);
+        // exc_arm.setTargetPose(400.0, -100.0, 300.0, 0.5, 1.0, 0.5);
         #ifdef COLLECT_RANDOM_TARGET
         target_pose.position.x    = random_number.getRandomNumber(200.0, 500.0, 1.0),
         target_pose.position.y    = random_number.getRandomNumber(-200.0, 200.0, 1.0),
@@ -89,14 +89,14 @@ void sequence()
         target_pose.orientation.x = random_number.getRandomNumber(-1.0, 1.0, 0.05);
         #endif
         #ifndef COLLECT_RANDOM_TARGET
-        // target_pose.position.x    = reachable_target_pose(challenge,0);
-        // target_pose.position.y    = reachable_target_pose(challenge,1);
-        // target_pose.position.z    = reachable_target_pose(challenge,2);
-        // target_pose.orientation.z = reachable_target_pose(challenge,3);
-        // target_pose.orientation.y = reachable_target_pose(challenge,4);
-        // target_pose.orientation.x = reachable_target_pose(challenge,5);
+        target_pose.position.x    = reachable_target_pose(challenge,0);
+        target_pose.position.y    = reachable_target_pose(challenge,1);
+        target_pose.position.z    = reachable_target_pose(challenge,2);
+        target_pose.orientation.z = reachable_target_pose(challenge,3);
+        target_pose.orientation.y = reachable_target_pose(challenge,4);
+        target_pose.orientation.x = reachable_target_pose(challenge,5);
         #endif
-        // exc_arm.setTargetPose(target_pose);
+        exc_arm.setTargetPose(target_pose);
 
         step = 20;
 
@@ -565,7 +565,7 @@ int main(int argc, char **argv)
             CMAV_pub.publish(exc_arm.getMotorAngularVelocityZero());
         }
 
-        if(success > 10) break;
+        if(success > 100) break;
         else if(challenge >= 350) break;
 
         ros::spinOnce();

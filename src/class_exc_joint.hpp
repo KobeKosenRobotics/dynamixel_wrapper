@@ -64,10 +64,7 @@ void ExCJoint::setJoint(int joint)
     _w = exc_arm_property.getW(joint);
     _v = -_w.cross(_q);
 
-    _eye3 <<
-    1.0, 0.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 0.0, 1.0;
+    _eye3.setIdentity();
 }
 
 Eigen::Matrix<double, 4, 4> ExCJoint::getExpXiHatTheta(double angle)
