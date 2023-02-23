@@ -43,11 +43,11 @@ class ExCJoint
         ExCJoint();
         void setJoint(int joint);
 
-        Eigen::Matrix<double, 4, 4> getExpXiHatTheta(double angle);
-            Eigen::Matrix<double, 3, 3> getExpWHatTheta(double angle);
-                double getVTheta(double angle);
-                    double getCosTheta(double angle);
-                    double getSinTheta(double angle);
+        Eigen::Matrix<double, 4, 4> getExpXiHatTheta(double &angle_);
+            Eigen::Matrix<double, 3, 3> getExpWHatTheta(double &angle_);
+                double getVTheta(double &angle_);
+                    double getCosTheta(double &angle_);
+                    double getSinTheta(double &angle_);
         Eigen::Matrix<double, 6, 1> getXi();
 };
 
@@ -67,14 +67,14 @@ void ExCJoint::setJoint(int joint)
     _eye3.setIdentity();
 }
 
-Eigen::Matrix<double, 4, 4> ExCJoint::getExpXiHatTheta(double angle)
+Eigen::Matrix<double, 4, 4> ExCJoint::getExpXiHatTheta(double &angle_)
 {
-    getCosTheta(angle);
-    getSinTheta(angle);
-    getVTheta(angle);
-    getExpWHatTheta(angle);
+    getCosTheta(angle_);
+    getSinTheta(angle_);
+    getVTheta(angle_);
+    getExpWHatTheta(angle_);
 
-    _position_exp_xi_hat_theta = ((_eye3-_exp_w_hat_theta)*(_w.cross(_v))) + (_w*_w.transpose())*_v*angle;
+    _position_exp_xi_hat_theta = ((_eye3-_exp_w_hat_theta)*(_w.cross(_v))) + (_w*_w.transpose())*_v*angle_;
 
     _exp_xi_hat_theta <<
     _exp_w_hat_theta, _position_exp_xi_hat_theta,
@@ -83,7 +83,7 @@ Eigen::Matrix<double, 4, 4> ExCJoint::getExpXiHatTheta(double angle)
     return _exp_xi_hat_theta;
 }
 
-Eigen::Matrix<double, 3, 3> ExCJoint::getExpWHatTheta(double angle)
+Eigen::Matrix<double, 3, 3> ExCJoint::getExpWHatTheta(double &angle_)
 {
     _exp_w_hat_theta(0,0) = pow(_w(0,0),2)*_v_theta + _cos_theta;
     _exp_w_hat_theta(0,1) = _w(0,0)*_w(1,0)*_v_theta - _w(2,0)*_sin_theta;
@@ -100,21 +100,21 @@ Eigen::Matrix<double, 3, 3> ExCJoint::getExpWHatTheta(double angle)
     return _exp_w_hat_theta;
 }
 
-double ExCJoint::getVTheta(double angle)
+double ExCJoint::getVTheta(double &angle_)
 {
     _v_theta = 1-_cos_theta;
     return _v_theta;
 }
 
-double ExCJoint::getCosTheta(double angle)
+double ExCJoint::getCosTheta(double &angle_)
 {
-    _cos_theta = cos(angle);
+    _cos_theta = cos(angle_);
     return _cos_theta;
 }
 
-double ExCJoint::getSinTheta(double angle)
+double ExCJoint::getSinTheta(double &angle_)
 {
-    _sin_theta = sin(angle);
+    _sin_theta = sin(angle_);
     return _sin_theta;
 }
 
