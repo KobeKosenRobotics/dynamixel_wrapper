@@ -99,3 +99,6 @@ target_link_libraries(exc_motor ${catkin_LIBRARIES} "/usr/include/eigen3")
 
 add_executable(exc_experimenter src/exc_experimenter.cpp)
 target_link_libraries(exc_experimenter ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(testtest src/testtest.cpp)
+target_link_libraries(testtest ${catkin_LIBRARIES} "/usr/include/eigen3")
