@@ -1,6 +1,8 @@
 #ifndef CLASS_TREE_EXC_ARM_PROPERTY_HPP
 #define CLASS_TREE_EXC_ARM_PROPERTY_HPP
 
+#include "class_tree_exc_arm_base.hpp"
+
 #include <ros/ros.h>
 
 #include <tf2/LinearMath/Quaternion.h>
@@ -41,10 +43,19 @@ class TreeExCArmProperty
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
         Eigen::Matrix<double, JOINT_NUMBER, 1> _initial_target_angle;
         Eigen::Matrix<double, JOINT_NUMBER, 2> _joint_angle_limit;
-        Eigen::Matrix<int, CHAIN_NUMBER, JOINT_NUMBER> _chain_matrix;
+        Eigen::Matrix<bool, CHAIN_NUMBER, JOINT_NUMBER> _chain_matrix;
 
     public:
+        // Constructor
         TreeExCArmProperty();
+
+        // Joint Parameter
+        Eigen::Matrix<double, 3, 1> getQ(int &joint_);
+        Eigen::Matrix<double, 3, 1> getV(int &joint_);
+        Eigen::Matrix<double, 3, 1> getW(int &joint_);
+
+        // Chain Matrix
+        bool getChainMatrix(int &chain_, int &joint_);
 };
 TreeExCArmProperty tree_property;
 
@@ -52,50 +63,31 @@ TreeExCArmProperty::TreeExCArmProperty()
 {
 }
 
+// Joint Parameter
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getQ(int &joint_)
+{
+    Eigen::Matrix<double, 3, 1> q_;
+    q_ << _joint_position(0,joint_), _joint_position(1,joint_), _joint_position(2,joint_);
+    return q_;
+}
+
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getV(int &joint_)
+{
+    Eigen::Matrix<double, 3, 1> v_;
+    v_ << _translation_axis(0,joint_), _translation_axis(1,joint_), _translation_axis(2,joint_);
+    return v_;
+}
+
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getW(int &joint_)
+{
+    Eigen::Matrix<double, 3, 1> w_;
+    w_ << _rotation_axis(0,joint_), _rotation_axis(1,joint_), _rotation_axis(2,joint_);
+    return w_;
+}
+
+bool TreeExCArmProperty::getChainMatrix(int &chain_, int &joint_)
+{
+    return _chain_matrix(chain_, joint_);
+}
 
 #endif
-
-// #include <iostream>
-// #include <utility>
-  
-// int count = 0;
-// int joint, parent;
-// int children[] = {-1, -1, -1, -1, -1, -1, -1, -1};
-
-// // パラメータパックが空になったら終了
-// void print()
-// {
-//   count = 0;
-// }
-
-// // ひとつ以上のパラメータを受け取るようにし、
-// // 可変引数を先頭とそれ以外に分割する
-// template <class Joint, class Parent, class Head, class... Tail>
-// void print(Joint&& joint, Parent&& parent, Head&& head, Tail&&... tail)
-// {
-//   if(count == 0) {joint = head;}
-//   else if(count == 1) {parent = head;}
-//   else if(head > 0){children[count-2] = head;}
-  
-  
-//   count++;
-  
-//   // std::cout << head << std::endl;
-
-//   // パラメータパックtailをさらにheadとtailに分割する
-//   print(std::forward<Tail>(tail)...);
-// }
-
-// int main()
-// {
-//   print(3, 2, 5, 6, 7);
-  
-//   std::cout << "joint: " << joint << std::endl;
-//   std::cout << "parent: " << parent << std::endl;
-//   for(int i = 0; i < 6; i++)
-//   {
-//     if(i == 0) {std::cout << "children: ";}
-//     if(children[i] >= 0) {std::cout << children[i] << " ";}
-//   }
-//   std::cout << std::endl;
-// }

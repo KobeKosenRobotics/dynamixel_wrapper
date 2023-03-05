@@ -19,20 +19,6 @@ TreeExCArm::TreeExCArm()
 
 void TreeExCArm::printTest()
 {
-    // _joint[0].setJoint(0, nullptr, (_joint+1*sizeof(TreeExCJoint)));
-    // _joint[1].setJoint(1, (_joint+0*sizeof(TreeExCJoint)), (_joint+2*sizeof(TreeExCJoint)));
-    // _joint[2].setJoint(2, (_joint+1*sizeof(TreeExCJoint)), (_joint+3*sizeof(TreeExCJoint)));
-    // _joint[0].setJoint(0, nullptr, (_joint+1));
-    // _joint[1].setJoint(1, (_joint), (_joint+2));
-    // _joint[2].setJoint(2, (_joint+1), (_joint+3));
-    // _joint[0].setJoint(0, -1, 1);
-    // _joint[1].setJoint(1, 0, 2);
-    // _joint[2].setJoint(2, 1, 3);
-    // _joint[0].printJoint();
-    // _joint[1].printJoint();
-    // _joint[2].printJoint();
-    // std::cout << (_joint+1*sizeof(TreeExCJoint)) << std::endl;
-
     for(int i = 1; i < 6; i++)
     {
         _joint[i].setJoint(i);
@@ -42,6 +28,10 @@ void TreeExCArm::printTest()
         _joint[i].setChildren(_joint+i+3);
     }
     _joint[2].printJoint();
+
+    Eigen::Matrix<double, 4, 4> mat;
+    mat.setIdentity();
+    std::cout << tree_base.adjoint(mat) << std::endl;
 }
 
 
