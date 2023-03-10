@@ -30,7 +30,7 @@
 class ExCArmSimulator
 {
     private:
-        ExCJointSimulator _joint[JOINT_NUMBER+CHAIN_NUMBER];
+        ExCJointSimulator _joint[JOINT_NUMBER+1];
         std_msgs::Float32MultiArray _angle, _angular_velocity;
 
         // Function
@@ -48,7 +48,7 @@ ExCArmSimulator::ExCArmSimulator()
     _angle.data.resize(JOINT_NUMBER);
     _angular_velocity.data.resize(JOINT_NUMBER);
 
-    for(int i = 0; i < JOINT_NUMBER+CHAIN_NUMBER; i++)
+    for(int i = 0; i < JOINT_NUMBER+1; i++)
     {
         _joint[i].initialize(i);
     }
@@ -99,46 +99,22 @@ void ExCArmSimulator::tfBroadcaster()
     br.sendTransform(transformStamped);
 
     // Joint 1 ~
-    // for(int i = 1; i < JOINT_NUMBER+1; i++)
-    // {
-    //     transformStamped.header.stamp = ros::Time::now();
-    //     transformStamped.header.frame_id = exc_arm_property.getJointName(i-1);
-    //     transformStamped.child_frame_id = exc_arm_property.getJointName(i);
-    //     transformStamped.transform.translation.x = exc_arm_property.getLink(i,0)/1000.0;
-    //     transformStamped.transform.translation.y = exc_arm_property.getLink(i,1)/1000.0;
-    //     transformStamped.transform.translation.z = exc_arm_property.getLink(i,2)/1000.0;
-
-    //     q.setRPY(_joint[i].getSimulationAngle(0), _joint[i].getSimulationAngle(1), _joint[i].getSimulationAngle(2));
-    //     transformStamped.transform.rotation.x = q.x();
-    //     transformStamped.transform.rotation.y = q.y();
-    //     transformStamped.transform.rotation.z = q.z();
-    //     transformStamped.transform.rotation.w = q.w();
-
-    //     br.sendTransform(transformStamped);
-    // }
-
-    for(int i = 0; i < CHAIN_NUMBER; i++)
+    for(int i = 1; i < JOINT_NUMBER+1; i++)
     {
-        for(int j = 1; j < JOINT_NUMBER+CHAIN_NUMBER; j++)
-        {
-            if(exc_arm_property.getChainJointMatrix(i,j) >= 0)
-            {
-                transformStamped.header.stamp = ros::Time::now();
-                transformStamped.header.frame_id = exc_arm_property.getJointName(exc_arm_property.getChainJointMatrix(i,j-1));
-                transformStamped.child_frame_id = exc_arm_property.getJointName(exc_arm_property.getChainJointMatrix(i,j));
-                transformStamped.transform.translation.x = exc_arm_property.getLink(exc_arm_property.getChainJointMatrix(i,j),0)/1000.0;
-                transformStamped.transform.translation.y = exc_arm_property.getLink(exc_arm_property.getChainJointMatrix(i,j),1)/1000.0;
-                transformStamped.transform.translation.z = exc_arm_property.getLink(exc_arm_property.getChainJointMatrix(i,j),2)/1000.0;
+        transformStamped.header.stamp = ros::Time::now();
+        transformStamped.header.frame_id = exc_arm_property.getJointName(i-1);
+        transformStamped.child_frame_id = exc_arm_property.getJointName(i);
+        transformStamped.transform.translation.x = exc_arm_property.getLink(i,0)/1000.0;
+        transformStamped.transform.translation.y = exc_arm_property.getLink(i,1)/1000.0;
+        transformStamped.transform.translation.z = exc_arm_property.getLink(i,2)/1000.0;
 
-                q.setRPY(_joint[exc_arm_property.getChainJointMatrix(i,j)].getSimulationAngle(0), _joint[exc_arm_property.getChainJointMatrix(i,j)].getSimulationAngle(1), _joint[exc_arm_property.getChainJointMatrix(i,j)].getSimulationAngle(2));
-                transformStamped.transform.rotation.x = q.x();
-                transformStamped.transform.rotation.y = q.y();
-                transformStamped.transform.rotation.z = q.z();
-                transformStamped.transform.rotation.w = q.w();
+        q.setRPY(_joint[i].getSimulationAngle(0), _joint[i].getSimulationAngle(1), _joint[i].getSimulationAngle(2));
+        transformStamped.transform.rotation.x = q.x();
+        transformStamped.transform.rotation.y = q.y();
+        transformStamped.transform.rotation.z = q.z();
+        transformStamped.transform.rotation.w = q.w();
 
-                br.sendTransform(transformStamped);
-            }
-        }
+        br.sendTransform(transformStamped);
     }
 }
 

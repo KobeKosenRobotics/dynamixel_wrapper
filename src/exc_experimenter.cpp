@@ -89,12 +89,18 @@ void sequence()
         target_pose.orientation.x = random_number.getRandomNumber(-1.0, 1.0, 0.05);
         #endif
         #ifndef COLLECT_RANDOM_TARGET
-        target_pose.position.x    = reachable_target_pose(challenge,0);
-        target_pose.position.y    = reachable_target_pose(challenge,1);
-        target_pose.position.z    = reachable_target_pose(challenge,2);
-        target_pose.orientation.z = reachable_target_pose(challenge,3);
-        target_pose.orientation.y = reachable_target_pose(challenge,4);
-        target_pose.orientation.x = reachable_target_pose(challenge,5);
+        // target_pose.position.x    = reachable_target_pose(challenge,0);
+        // target_pose.position.y    = reachable_target_pose(challenge,1);
+        // target_pose.position.z    = reachable_target_pose(challenge,2);
+        // target_pose.orientation.z = reachable_target_pose(challenge,3);
+        // target_pose.orientation.y = reachable_target_pose(challenge,4);
+        // target_pose.orientation.x = reachable_target_pose(challenge,5);
+        target_pose.position.x    = random_number.getRandomNumber(200.0, 500.0, 1.0),
+        target_pose.position.y    = random_number.getRandomNumber(-200.0, 200.0, 1.0),
+        target_pose.position.z    = random_number.getRandomNumber(200.0, 500.0, 1.0),
+        target_pose.orientation.z = random_number.getRandomNumber(-1.0, 1.0, 0.05),
+        target_pose.orientation.y = random_number.getRandomNumber(1.0, 1.5, 0.05),
+        target_pose.orientation.x = random_number.getRandomNumber(-1.0, 1.0, 0.05);
         #endif
         exc_arm.setTargetPose(target_pose);
 
