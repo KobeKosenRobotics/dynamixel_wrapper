@@ -8,7 +8,7 @@ class TreeExCJointSimulator
     private:
         // Property
         int _joint;
-        Eigen::Matrix<double, 3, 1> _w;
+        Eigen::Matrix<double, 3, 1> _v, _w;
         TreeExCJointSimulator* _parent_joint = nullptr;
         std::vector<TreeExCJointSimulator*> _children_joint{nullptr};
         int _children_number = 0;
@@ -28,9 +28,12 @@ class TreeExCJointSimulator
         void setChildren(TreeExCJointSimulator *children_joint_);
 
         // Simulator
-        void angularVelocity2Angle(double &angular_velocity_);
+        void angularVelocity2Angle(double angular_velocity_);
         double getSimulationAngle();
         double getSimulationAngle(int axis_);
+        double getSimulationLink(int axis_);
+
+        int getParentJoint();
 };
 
 // Constructor
@@ -42,6 +45,7 @@ TreeExCJointSimulator::TreeExCJointSimulator()
 void TreeExCJointSimulator::setJoint(int joint_)
 {
     _joint = joint_;
+    _v = tree_property.getV(_joint);
     _w = tree_property.getW(_joint);
 }
 
@@ -57,7 +61,7 @@ void TreeExCJointSimulator::setChildren(TreeExCJointSimulator *children_joint_)
 }
 
 // Simulator
-void TreeExCJointSimulator::angularVelocity2Angle(double &angular_velocity_)
+void TreeExCJointSimulator::angularVelocity2Angle(double angular_velocity_)
 {
     _simulation_angular_velocity = angular_velocity_;
 
@@ -79,5 +83,15 @@ double TreeExCJointSimulator::getSimulationAngle()
 double TreeExCJointSimulator::getSimulationAngle(int axis_)
 {
     return _w(axis_,0)*_simulation_angle;
+}
+
+double TreeExCJointSimulator::getSimulationLink(int axis_)
+{
+    return ((_v(axis_, 0)*_simulation_angle) + (tree_property.getLink(_joint, axis_))) * 0.001;
+}
+
+int TreeExCJointSimulator::getParentJoint()
+{
+    return _parent_joint->_joint;
 }
 #endif

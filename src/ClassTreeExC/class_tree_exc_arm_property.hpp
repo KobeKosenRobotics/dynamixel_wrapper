@@ -54,6 +54,12 @@ class TreeExCArmProperty
         Eigen::Matrix<double, 3, 1> getV(int &joint_);
         Eigen::Matrix<double, 3, 1> getW(int &joint_);
 
+        // Joint Link
+        double getLink(int joint_, int axis_);
+
+        // Joint Name
+        std::string getJointName(int joint_);
+
         // Chain Matrix
         bool getChainMatrix(int &chain_, int &joint_);
 };
@@ -85,6 +91,18 @@ Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getW(int &joint_)
     return w_;
 }
 
+// Joint Link
+double TreeExCArmProperty::getLink(int joint_, int axis_)
+{
+    return _link(joint_,axis_);
+}
+// Joint Name
+std::string TreeExCArmProperty::getJointName(int joint_)
+{
+    return _joint_name(joint_,0);
+}
+
+// Chain Matrix
 bool TreeExCArmProperty::getChainMatrix(int &chain_, int &joint_)
 {
     return _chain_matrix(chain_, joint_);

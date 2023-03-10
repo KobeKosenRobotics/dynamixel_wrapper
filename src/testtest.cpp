@@ -4,6 +4,8 @@
 
 #include "ClassTreeExC/class_tree_exc_joint.hpp"
 
+#include "ClassTreeExC/class_tree_exc_arm_simulator.hpp"
+
 int main()
 {
     TreeExCArm arm;
