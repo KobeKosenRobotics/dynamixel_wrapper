@@ -641,8 +641,7 @@ void ExCArm::getMotorAngularVelocityByExC()
     #endif
 
     #ifndef DOF6
-    // _motor_angular_velocity = _proportional_gain*(exc_arm_property.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
-    _motor_angular_velocity = _proportional_gain*(exc_arm_property.getPseudoInverseMatrix(getExCJacobian()))*(_target_pose-getPose());
+    _motor_angular_velocity = _proportional_gain*(exc_arm_property.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
     #endif
 }
 
