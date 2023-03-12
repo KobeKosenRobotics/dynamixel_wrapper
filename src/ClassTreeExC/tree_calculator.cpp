@@ -82,24 +82,24 @@ int main(int argc, char **argv)
     ros::Subscriber emergency_stop_sub = nh.subscribe<std_msgs::Bool>("emergency_stop", 100, emergency_stop_cb);
     ros::Subscriber calculation_mode_sub = nh.subscribe<std_msgs::Int16>("calculation_mode", 10, calculation_mode_cb);
 
-    // while(nh.ok())
-    // {
-    //     tree_arm.print();
+    while(nh.ok())
+    {
+        tree_arm.print();
 
-    //     if(tree_arm.getMotorEnable())
-    //     {
-    //         CSAV_pub.publish(tree_arm.getMotorAngularVelocityZero());
-    //         CMAV_pub.publish(tree_arm.getMotorAngularVelocity());
-    //     }
-    //     else
-    //     {
-    //         CSAV_pub.publish(tree_arm.getMotorAngularVelocity());
-    //         CMAV_pub.publish(tree_arm.getMotorAngularVelocityZero());
-    //     }
+        // CSAV_pub.publish(tree_arm.getMotorAngularVelocity());
 
-    //     ros::spinOnce();
-    //     loop_rate.sleep();
-    // }
+        // if(tree_arm.getMotorEnable())
+        // {
+        //     CMAV_pub.publish(tree_arm.getMotorAngularVelocity());
+        // }
+        // else
+        // {
+        //     CMAV_pub.publish(tree_arm.getMotorAngularVelocityZero());
+        // }
+
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
 
     return 0;
 }

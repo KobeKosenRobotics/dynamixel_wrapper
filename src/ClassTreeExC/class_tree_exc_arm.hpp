@@ -66,7 +66,7 @@ class TreeExCArm
             void setTargetPoseStart();
 
         // Forward Kinematics
-        Eigen::Matrix<double, 6, 1> getPose();
+        Eigen::Matrix<double, 6*CHAIN_NUMBER, 1> getPose();
 
         // Linear Interpolation
         Eigen::Matrix<double, 6, 1> getMidTargetPoseLinearInterpolation();
@@ -111,6 +111,8 @@ void TreeExCArm::setJoint()
     {
         _joint[i].setJoint(i);
     }
+
+    // TODO: include setJoint()
     // Chain Matrix
     // - 0- 1- 2- 3- 4- 5- 6- 7-14
     //       - 8- 9-10-11-12-13-15
@@ -159,6 +161,11 @@ void TreeExCArm::setJoint()
     _joint[14].setParent(_joint+7);
 
     _joint[15].setParent(_joint+13);
+
+    for(int i = 0; i < JOINT_NUMBER+CHAIN_NUMBER; i++)
+    {
+        _joint[i].setJoint(i);
+    }
 }
 
 // Debug
@@ -171,10 +178,10 @@ void TreeExCArm::print()
     // << std::endl
     // << _sensor_angle
 
-    // << std::endl
-    // << "pose"
-    // << std::endl
-    // << getPose()
+    << std::endl
+    << "pose"
+    << std::endl
+    << getPose()
 
     << std::endl;
 }
@@ -202,6 +209,7 @@ void TreeExCArm::setSensorAngle(std_msgs::Float32MultiArray sensor_angle_)
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
         _sensor_angle(i,0) = sensor_angle_.data[i];
+        _joint[i].updateTheta(_sensor_angle(i,0));
     }
 }
 
@@ -227,7 +235,8 @@ void TreeExCArm::setTargetPose(geometry_msgs::Pose target_pose_)
 
         for(int i = 0; i < CHAIN_NUMBER; i++)
         {
-            _target_pose.block(6*i, 0, 3, 1) += target_pose_.orientation.w*(tree_base.getRotationMatrixZ(_target_object_pose(3,0))*tree_base.getRotationMatrixY(_target_object_pose(4,0))*tree_base.getRotationMatrixX(_target_object_pose(5,0))*(tree_property.getToolDefaultPose(i)).block(0,0,3,1));
+            _target_pose.block(6*i, 0, 3, 1) = _target_object_pose.block(0,0,3,1) + target_pose_.orientation.w*(tree_base.getRotationMatrixZ(_target_object_pose(3,0))*tree_base.getRotationMatrixY(_target_object_pose(4,0))*tree_base.getRotationMatrixX(_target_object_pose(5,0))*(tree_property.getToolDefaultPose(i)).block(0,0,3,1));
+            _target_pose.block(6*i+3, 0, 3, 1) = _target_object_pose.block(3,0,3,1);
         }
 
         setTargetPoseStart();
@@ -242,4 +251,59 @@ void TreeExCArm::setTargetPoseStart()
     _time_start_move = ros::Time::now();
     _duration_time = ((_target_pose-_target_pose_start).norm())/_linear_velocity;
 }
+
+// Forward Kinematics
+Eigen::Matrix<double, 6*CHAIN_NUMBER, 1> TreeExCArm::getPose()
+{
+    for(int i = 0; i < CHAIN_NUMBER; i++)
+    {
+        std::cout << _joint[JOINT_NUMBER+i].getGsjTheta() << std::endl;
+        _pose.block(6*i,0,6,1) = tree_base.getPose(_joint[JOINT_NUMBER+i].getGsjTheta());
+    }
+
+    static tf2_ros::TransformBroadcaster br;
+    static geometry_msgs::TransformStamped transformStamped;
+    static tf2::Quaternion q;
+    std::stringstream ss;
+
+    // Pose
+    for(int i = 0; i < CHAIN_NUMBER; i ++)
+    {
+        transformStamped.header.stamp = ros::Time::now();
+        transformStamped.header.frame_id = "arm_base_link";
+        ss << "pose" << i;
+        transformStamped.child_frame_id = ss.str();
+        transformStamped.transform.translation.x = _pose(6*i+0,0)/1000.0;
+        transformStamped.transform.translation.y = _pose(6*i+1,0)/1000.0;
+        transformStamped.transform.translation.z = _pose(6*i+2,0)/1000.0;
+
+        q.setRPY(_pose(6*i+5,0), _pose(6*i+4,0), _pose(6*i+3,0));
+        transformStamped.transform.rotation.x = q.x();
+        transformStamped.transform.rotation.y = q.y();
+        transformStamped.transform.rotation.z = q.z();
+        transformStamped.transform.rotation.w = q.w();
+
+        br.sendTransform(transformStamped);
+
+        // Target Pose
+        transformStamped.header.stamp = ros::Time::now();
+        transformStamped.header.frame_id = "arm_base_link";
+        ss << "target_pose" << i;
+        transformStamped.child_frame_id = ss.str();
+        transformStamped.transform.translation.x = _target_pose(6*i+0,0)/1000.0;
+        transformStamped.transform.translation.y = _target_pose(6*i+1,0)/1000.0;
+        transformStamped.transform.translation.z = _target_pose(6*i+2,0)/1000.0;
+
+        q.setRPY(_target_pose(6*i+5,0), _target_pose(6*i+4,0), _target_pose(6*i+3,0));
+        transformStamped.transform.rotation.x = q.x();
+        transformStamped.transform.rotation.y = q.y();
+        transformStamped.transform.rotation.z = q.z();
+        transformStamped.transform.rotation.w = q.w();
+
+        br.sendTransform(transformStamped);
+    }
+
+    return _pose;
+}
+
 #endif

@@ -57,6 +57,7 @@ class TreeExCArmProperty
         Eigen::Matrix<double, 3, 1> getW(int &joint_);
 
         // Joint Link
+        Eigen::Matrix<double, 3, 1> getLink(int joint_);
         double getLink(int joint_, int axis_);
 
         // Joint Name
@@ -115,6 +116,10 @@ TreeExCArmProperty::TreeExCArmProperty()
     // 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
     1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
     1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1;
+
+    _tool_default_pose <<
+     1, 0, 0, 0, 0, 0,
+    -1, 0, 0, 0, 0, 0;
 }
 
 // Link to Joint Position
@@ -134,26 +139,25 @@ Eigen::Matrix<double, 3, JOINT_NUMBER+CHAIN_NUMBER> TreeExCArmProperty::link2Joi
 // Joint Parameter
 Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getQ(int &joint_)
 {
-    Eigen::Matrix<double, 3, 1> q_;
-    q_ << _joint_position(0,joint_), _joint_position(1,joint_), _joint_position(2,joint_);
-    return q_;
+    return _joint_position.col(joint_);
 }
 
 Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getV(int &joint_)
 {
-    Eigen::Matrix<double, 3, 1> v_;
-    v_ << _translation_axis(0,joint_), _translation_axis(1,joint_), _translation_axis(2,joint_);
-    return v_;
+    return _translation_axis.col(joint_);
 }
 
 Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getW(int &joint_)
 {
-    Eigen::Matrix<double, 3, 1> w_;
-    w_ << _rotation_axis(0,joint_), _rotation_axis(1,joint_), _rotation_axis(2,joint_);
-    return w_;
+    return _rotation_axis.col(joint_);
 }
 
 // Joint Link
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getLink(int joint_)
+{
+    return (_link.row(joint_)).transpose();
+}
+
 double TreeExCArmProperty::getLink(int joint_, int axis_)
 {
     return _link(joint_,axis_);

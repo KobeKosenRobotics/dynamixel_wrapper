@@ -35,15 +35,15 @@ class TreeExCArmBase
         TreeExCArmBase();
 
         Eigen::Matrix<double, 3, 3> getIdentity3();
+        Eigen::Matrix<double, 3, 3> hat(Eigen::Matrix<double, 3, 1> &vector_);
 
         // Rotation Matrix
         Eigen::Matrix<double, 3, 3> getRotationMatrixX(double &angle_);
         Eigen::Matrix<double, 3, 3> getRotationMatrixY(double &angle_);
         Eigen::Matrix<double, 3, 3> getRotationMatrixZ(double &angle_);
 
+        // Forward Kinematics
         Eigen::Matrix<double, 6, 1> getPose(Eigen::Matrix<double, 4, 4> homogeneous_transformation_matrix_);
-
-        Eigen::Matrix<double, 3, 3> hat(Eigen::Matrix<double, 3, 1> &vector_);
 
         Eigen::Matrix<double, 6, 6> adjoint(Eigen::Matrix<double, 4, 4> &matrix_);
         // TODO: adjointInverse(Matrix &matrix_); comparison calculation time
@@ -62,6 +62,19 @@ Eigen::Matrix<double, 3, 3> TreeExCArmBase::getIdentity3()
     Eigen::Matrix<double, 3, 3> identity_;
     identity_.setIdentity();
     return identity_;
+}
+
+//
+Eigen::Matrix<double, 3, 3> TreeExCArmBase::hat(Eigen::Matrix<double, 3, 1> &vector_)
+{
+    Eigen::Matrix<double, 3, 3> hat_vector_;
+
+    hat_vector_ <<
+              0.0, -vector_(2,0),  vector_(1,0),
+     vector_(2,0),           0.0, -vector_(0,0),
+    -vector_(1,0),  vector_(0,0),           0.0;
+
+    return hat_vector_;
 }
 
 // Rotation Matrix
@@ -95,13 +108,12 @@ Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixZ(double &angle_)
     return rotation_matrix_z_;
 }
 
-// Pose
+// Forward Kinematics
 Eigen::Matrix<double, 6, 1> TreeExCArmBase::getPose(Eigen::Matrix<double, 4, 4> homogeneous_transformation_matrix_)
 {
     Eigen::Matrix<double, 6, 1> pose_;
-    pose_(0,0) = homogeneous_transformation_matrix_(0,3);
-    pose_(1,0) = homogeneous_transformation_matrix_(1,3);
-    pose_(2,0) = homogeneous_transformation_matrix_(2,3);
+
+    pose_.block(0,0,3,1) = homogeneous_transformation_matrix_.block(0,3,3,1);
 
     pose_(4,0) = -asin(homogeneous_transformation_matrix_(2,0));
     pose_(3,0) = acos(homogeneous_transformation_matrix_(0,0)/cos(pose_(4,0)));
@@ -115,19 +127,6 @@ Eigen::Matrix<double, 6, 1> TreeExCArmBase::getPose(Eigen::Matrix<double, 4, 4> 
     }
 
     return pose_;
-}
-
-//
-Eigen::Matrix<double, 3, 3> TreeExCArmBase::hat(Eigen::Matrix<double, 3, 1> &vector_)
-{
-    Eigen::Matrix<double, 3, 3> hat_vector_;
-
-    hat_vector_ <<
-              0.0, -vector_(2,0),  vector_(1,0),
-     vector_(2,0),           0.0, -vector_(0,0),
-    -vector_(1,0),  vector_(0,0),           0.0;
-
-    return hat_vector_;
 }
 
 // Adjoint

@@ -30,6 +30,7 @@ class TreeExCJoint
 
         // Family
         void setJoint(int joint_);
+            Eigen::Matrix<double, 3, 1> getQ();
             Eigen::Matrix<double, 6, 1> getXi();
             Eigen::Matrix<double, 4, 4> getGsjZero();
         void setParent(TreeExCJoint *parent_joint_);
@@ -52,6 +53,7 @@ class TreeExCJoint
 
 TreeExCJoint::TreeExCJoint()
 {
+    updateTheta(_theta);
 }
 
 // Family
@@ -59,13 +61,23 @@ void TreeExCJoint::setJoint(int joint_)
 {
     _joint = joint_;
 
-    _q = tree_property.getQ(_joint);
+    // _q = tree_property.getQ(_joint);
+    _q = getQ();
     _v = tree_property.getV(_joint);
     _w = tree_property.getW(_joint);
 
     getXi();
 
     getGsjZero();
+}
+
+Eigen::Matrix<double, 3, 1> TreeExCJoint::getQ()
+{
+    if(_parent_joint == nullptr)
+    {
+        return tree_property.getLink(_joint);
+    }
+    return _parent_joint->_q+tree_property.getLink(_joint);
 }
 
 Eigen::Matrix<double, 6, 1> TreeExCJoint::getXi()
@@ -147,6 +159,8 @@ Eigen::Matrix<double, 3, 3> TreeExCJoint::getExpWHatTheta()
     _exp_w_hat_theta(2,0) = _w(0,0)*_w(2,0)*_v_theta - _w(1,0)*_sin_theta;
     _exp_w_hat_theta(2,1) = _w(1,0)*_w(2,0)*_v_theta + _w(0,0)*_sin_theta;
     _exp_w_hat_theta(2,2) = pow(_w(2,0),2)*_v_theta + _cos_theta;
+
+    std::cout << _exp_w_hat_theta << std::endl;
 
     return _exp_w_hat_theta;
 }
