@@ -36,6 +36,11 @@ class TreeExCArmBase
 
         Eigen::Matrix<double, 3, 3> getIdentity3();
 
+        // Rotation Matrix
+        Eigen::Matrix<double, 3, 3> getRotationMatrixX(double &angle_);
+        Eigen::Matrix<double, 3, 3> getRotationMatrixY(double &angle_);
+        Eigen::Matrix<double, 3, 3> getRotationMatrixZ(double &angle_);
+
         Eigen::Matrix<double, 6, 1> getPose(Eigen::Matrix<double, 4, 4> homogeneous_transformation_matrix_);
 
         Eigen::Matrix<double, 3, 3> hat(Eigen::Matrix<double, 3, 1> &vector_);
@@ -57,6 +62,37 @@ Eigen::Matrix<double, 3, 3> TreeExCArmBase::getIdentity3()
     Eigen::Matrix<double, 3, 3> identity_;
     identity_.setIdentity();
     return identity_;
+}
+
+// Rotation Matrix
+Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixX(double &angle_)
+{
+    Eigen::Matrix<double, 3,3> rotation_matrix_x_;
+    rotation_matrix_x_ <<
+    1.0,         0.0,          0.0,
+    0.0, cos(angle_), -sin(angle_),
+    0.0, sin(angle_),  cos(angle_);
+    return rotation_matrix_x_;
+}
+
+Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixY(double &angle_)
+{
+    Eigen::Matrix<double, 3,3> rotation_matrix_y_;
+    rotation_matrix_y_ <<
+     cos(angle_),        0.0, sin(angle_),
+             0.0,        1.0,         0.0,
+    -sin(angle_),        0.0, cos(angle_);
+    return rotation_matrix_y_;
+}
+
+Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixZ(double &angle_)
+{
+    Eigen::Matrix<double, 3,3> rotation_matrix_z_;
+    rotation_matrix_z_ <<
+    cos(angle_), -sin(angle_), 0.0,
+    sin(angle_),  cos(angle_), 0.0,
+            0.0,          0.0, 1.0;
+    return rotation_matrix_z_;
 }
 
 // Pose

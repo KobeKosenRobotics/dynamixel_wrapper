@@ -102,3 +102,9 @@ target_link_libraries(exc_experimenter ${catkin_LIBRARIES} "/usr/include/eigen3"
 
 add_executable(testtest src/testtest.cpp)
 target_link_libraries(testtest ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(tree_calculator src/ClassTreeExC/tree_calculator.cpp)
+target_link_libraries(tree_calculator ${catkin_LIBRARIES} "/usr/include/eigen3")
+
+add_executable(tree_simulator src/ClassTreeExC/tree_simulator.cpp)
+target_link_libraries(tree_simulator ${catkin_LIBRARIES} "/usr/include/eigen3")

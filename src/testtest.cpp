@@ -9,6 +9,5 @@
 int main()
 {
     TreeExCArm arm;
-    arm.printTest();
     return 0;
 }
