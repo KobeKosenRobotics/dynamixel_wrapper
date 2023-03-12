@@ -812,6 +812,7 @@ Eigen::Matrix<double, 6, JOINT_NUMBER> ExCArm::getExCJacobianBody()
             _exc_jacobian_body(k,i) = xi_dagger_[i](k,0);
         }
     }
+    std::cout << _exc_jacobian_body<< std::endl << std::endl;
 
     return _exc_jacobian_body;
 }

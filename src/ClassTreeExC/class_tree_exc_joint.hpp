@@ -46,8 +46,9 @@ class TreeExCJoint
 
         Eigen::Matrix<double, 4, 4> getGsjTheta();
             Eigen::Matrix<double, 4, 4> getGsjThetaRecursion();
-        Eigen::Matrix<double, 4, 4> getChildrenExpXiHatTheta(int chain_);
-        Eigen::Matrix<double, 6, 1> getXiDagger(int chain_);
+        Eigen::Matrix<double, 4, 4> getChildrenExpXiHatTheta(int chain_, int joint_);
+            Eigen::Matrix<double, 4, 4> getExpXiHatTheta(int chain_, int joint_);
+        Eigen::Matrix<double, 6, 1> getXiDagger(int chain_, int joint_);
 
 };
 
@@ -86,7 +87,7 @@ Eigen::Matrix<double, 3, 1> TreeExCJoint::getQ()
 
 Eigen::Matrix<double, 6, 1> TreeExCJoint::getXi()
 {
-    _xi << -_w.cross(_q), _v;
+    _xi << -_w.cross(_q), _w;
 
     return _xi;
 }
@@ -186,24 +187,50 @@ Eigen::Matrix<double, 4, 4> TreeExCJoint::getGsjThetaRecursion()
     return _parent_joint->getGsjThetaRecursion()*getExpXiHatTheta();
 }
 
-Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatTheta(int chain_)
+// Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatTheta(int chain_)
+// {
+//     if(!tree_property.getChainMatrix(chain_,_joint)) return Eigen::Matrix<double, 4, 4>::Zero();
+//     if(_children_joint[0]->_joint >= JOINT_NUMBER) return getExpXiHatTheta();
+
+//     for(int i = 0; i < _children_number; i++)
+//     {
+//         if(tree_property.getChainMatrix(chain_, _children_joint[i]->_joint)) return getExpXiHatTheta()*_children_joint[i]->getChildrenExpXiHatTheta(chain_);
+//     }
+
+//     std::cout << "ERROR: EXCEPTION from TreeExCJoint::getChildrenExpXiTheta()" << std::endl;
+
+//     return getExpXiHatTheta();
+// }
+
+Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatTheta(int chain_, int joint_)
 {
-    if(!tree_property.getChainMatrix(chain_,_joint)) return Eigen::Matrix<double, 4, 4>::Zero();
-    else if(_children_joint[0] == nullptr) return getExpXiHatTheta();
-
-    for(int i = 0; i < _children_number; i++)
+    std::cout << _joint << "    ";
+    if(_joint == joint_)
     {
-        if(tree_property.getChainMatrix(chain_, _children_joint[i]->_joint)) return getExpXiHatTheta()*_children_joint[i]->getChildrenExpXiHatTheta(chain_);
+        std::cout << "A";
+        std::cout << std::endl;
+        return getExpXiHatTheta(chain_, _joint);
     }
-
-    std::cout << "ERROR: EXCEPTION from TreeExCJoint::getChildrenExpXiTheta()" << std::endl;
-
-    return getExpXiHatTheta();
+    if(_joint >= JOINT_NUMBER)
+    {
+        std::cout << "B";
+        return _parent_joint->getChildrenExpXiHatTheta(chain_, joint_)*_gsj_zero;
+    }
+    std::cout << "C";
+    return _parent_joint->getChildrenExpXiHatTheta(chain_, joint_)*getExpXiHatTheta(chain_, _joint);
+    return tree_base.getIdentity4();
 }
 
-Eigen::Matrix<double, 6, 1> TreeExCJoint::getXiDagger(int chain_)
+Eigen::Matrix<double, 4, 4> TreeExCJoint::getExpXiHatTheta(int chain_, int joint_)
 {
-    _xi_dagger = tree_base.adjointInverse(getChildrenExpXiHatTheta(chain_))*_xi;
+    if(tree_property.getChainMatrix(chain_, joint_)) return getExpXiHatTheta();
+    return tree_base.getIdentity4();
+}
+
+
+Eigen::Matrix<double, 6, 1> TreeExCJoint::getXiDagger(int chain_, int joint_)
+{
+    _xi_dagger = tree_base.adjointInverse(getChildrenExpXiHatTheta(chain_, joint_))*_xi;
     return _xi_dagger;
 }
 
