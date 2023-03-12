@@ -61,10 +61,14 @@ void TreeExCJoint::setJoint(int joint_)
 {
     _joint = joint_;
 
-    // _q = tree_property.getQ(_joint);
     _q = getQ();
     _v = tree_property.getV(_joint);
     _w = tree_property.getW(_joint);
+
+    if(_v.norm() == 0)
+    {
+        _v = -_w.cross(_q);
+    }
 
     getXi();
 
@@ -137,6 +141,7 @@ void TreeExCJoint::updateTheta(double &theta_)
 // Parameter
 Eigen::Matrix<double, 4, 4> TreeExCJoint::getExpXiHatTheta()
 {
+    updateTheta(_theta);
     getExpWHatTheta();
 
     _exp_xi_hat_theta <<
@@ -160,8 +165,6 @@ Eigen::Matrix<double, 3, 3> TreeExCJoint::getExpWHatTheta()
     _exp_w_hat_theta(2,1) = _w(1,0)*_w(2,0)*_v_theta + _w(0,0)*_sin_theta;
     _exp_w_hat_theta(2,2) = pow(_w(2,0),2)*_v_theta + _cos_theta;
 
-    std::cout << _exp_w_hat_theta << std::endl;
-
     return _exp_w_hat_theta;
 }
 
@@ -175,6 +178,10 @@ Eigen::Matrix<double, 4, 4> TreeExCJoint::getGsjThetaRecursion()
     if(_parent_joint == nullptr)
     {
         return getExpXiHatTheta();
+    }
+    if(_joint >= JOINT_NUMBER)
+    {
+        return _parent_joint->getGsjThetaRecursion();
     }
     return _parent_joint->getGsjThetaRecursion()*getExpXiHatTheta();
 }

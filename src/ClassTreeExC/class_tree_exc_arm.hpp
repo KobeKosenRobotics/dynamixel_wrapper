@@ -173,15 +173,20 @@ void TreeExCArm::print()
 {
     std::cout
 
-    // << std::endl
-    // << "angle"
-    // << std::endl
-    // << _sensor_angle
+    << std::endl
+    << "angle"
+    << std::endl
+    << _sensor_angle
 
     << std::endl
     << "pose"
     << std::endl
     << getPose()
+
+    // << std::endl
+    // << "target pose"
+    // << std::endl
+    // << _target_pose
 
     << std::endl;
 }
@@ -257,20 +262,20 @@ Eigen::Matrix<double, 6*CHAIN_NUMBER, 1> TreeExCArm::getPose()
 {
     for(int i = 0; i < CHAIN_NUMBER; i++)
     {
-        std::cout << _joint[JOINT_NUMBER+i].getGsjTheta() << std::endl;
         _pose.block(6*i,0,6,1) = tree_base.getPose(_joint[JOINT_NUMBER+i].getGsjTheta());
     }
+    std::cout << _joint[JOINT_NUMBER].getGsjTheta() << std::endl << std::endl;
 
     static tf2_ros::TransformBroadcaster br;
     static geometry_msgs::TransformStamped transformStamped;
     static tf2::Quaternion q;
-    std::stringstream ss;
 
     // Pose
     for(int i = 0; i < CHAIN_NUMBER; i ++)
     {
         transformStamped.header.stamp = ros::Time::now();
         transformStamped.header.frame_id = "arm_base_link";
+        std::stringstream ss;
         ss << "pose" << i;
         transformStamped.child_frame_id = ss.str();
         transformStamped.transform.translation.x = _pose(6*i+0,0)/1000.0;
@@ -288,8 +293,9 @@ Eigen::Matrix<double, 6*CHAIN_NUMBER, 1> TreeExCArm::getPose()
         // Target Pose
         transformStamped.header.stamp = ros::Time::now();
         transformStamped.header.frame_id = "arm_base_link";
-        ss << "target_pose" << i;
-        transformStamped.child_frame_id = ss.str();
+        std::stringstream tt;
+        tt << "target_pose" << i;
+        transformStamped.child_frame_id = tt.str();
         transformStamped.transform.translation.x = _target_pose(6*i+0,0)/1000.0;
         transformStamped.transform.translation.y = _target_pose(6*i+1,0)/1000.0;
         transformStamped.transform.translation.z = _target_pose(6*i+2,0)/1000.0;
@@ -305,5 +311,119 @@ Eigen::Matrix<double, 6*CHAIN_NUMBER, 1> TreeExCArm::getPose()
 
     return _pose;
 }
+
+// Publish
+bool TreeExCArm::getMotorEnable()
+{
+    return _motor_enable;
+}
+
+bool TreeExCArm::getEmergencyStop()
+{
+    return _emergency_stop;
+}
+
+int TreeExCArm::getCalculationMode()
+{
+    return _calculation_mode;
+}
+
+std_msgs::Float32MultiArray TreeExCArm::getMotorAngularVelocityZero()
+{
+    std_msgs::Float32MultiArray motor_angular_velocity_zero_;
+    motor_angular_velocity_zero_.data.resize(JOINT_NUMBER);
+
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        motor_angular_velocity_zero_.data[i] = 0.0;
+    }
+
+    return motor_angular_velocity_zero_;
+}
+
+std_msgs::Float32MultiArray TreeExCArm::getMotorAngularVelocity()
+{
+    changeMotorAngularVelocity();
+
+    std_msgs::Float32MultiArray motor_angular_velocity_;
+    motor_angular_velocity_.data.resize(JOINT_NUMBER);
+
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        motor_angular_velocity_.data[i] = _motor_angular_velocity(i,0);
+    }
+
+    return motor_angular_velocity_;
+}
+
+void TreeExCArm::changeMotorAngularVelocity()
+{
+    if(_emergency_stop)
+    {
+        setMotorAngularVelocityZero();
+        return;
+    }
+    if(isWithinEmergencyAngleLimit())
+    {
+        std::cout << "ERROR: emergency angle limit" << std::endl;
+        setMotorAngularVelocityZero();
+        return;
+    }
+
+    if(_calculation_mode == 1)
+    {
+        // _calculation_number++;
+        // _calculation_time_start = ros::Time::now();
+        // getMotorAngularVelocityByExC();
+        // _calculation_time_end = ros::Time::now();
+        // _total_calculation_time += (_calculation_time_end - _calculation_time_start).toSec();
+        return;
+    }
+
+    else
+    {
+        getMotorAngularVelocityByAngle();
+        return;
+    }
+}
+
+bool TreeExCArm::isWithinEmergencyAngleLimit()
+{
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        if((_sensor_angle(i,0) < tree_property.getLowerAngleLimit(i))-0.5 || (tree_property.getUpperAngleLimit(i)+0.5 < _sensor_angle(i,0)))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void TreeExCArm::setMotorAngularVelocityZero()
+{
+    for(int i = 0; i < JOINT_NUMBER; i++)
+    {
+        _motor_angular_velocity(i,0) = 0.0;
+    }
+}
+
+void TreeExCArm::getMotorAngularVelocityByAngle()
+{
+    getPose();
+    _motor_angular_velocity = tree_property.getProportionalGainAngleOperating()*(_target_angle - _sensor_angle);
+}
+
+// void TreeExCArm::getMotorAngularVelocityByExC()
+// {
+//     #ifdef DOF6
+//     _motor_angular_velocity = _proportional_gain*(getExCJacobian().inverse())*(getMidTargetPoseLinearInterpolation()-getPose());
+//     #endif
+
+//     #ifndef DOF6
+//     // _motor_angular_velocity = _proportional_gain*(tree_property.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
+//     _motor_angular_velocity = _proportional_gain*(tree_property.getPseudoInverseMatrix(getExCJacobian()))*(_target_pose-getPose());
+//     #endif
+// }
 
 #endif

@@ -132,8 +132,6 @@ void TreeExCArmSimulator::tfBroadcaster()
     // Joint 1 ~
     for(int i = 1; i < (JOINT_NUMBER+CHAIN_NUMBER); i++)
     {
-        std::cout << _joint[i].getSimulationLink(0) << "    " << _joint[i].getSimulationLink(1) << "    " << _joint[i].getSimulationLink(2) << "    " << std::endl;
-
         transformStamped.header.stamp = ros::Time::now();
         transformStamped.header.frame_id = tree_property.getJointName(_joint[i].getParentJoint());
         transformStamped.child_frame_id = tree_property.getJointName(i);

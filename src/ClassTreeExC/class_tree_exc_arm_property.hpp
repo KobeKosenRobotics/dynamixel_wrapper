@@ -42,7 +42,7 @@ class TreeExCArmProperty
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
         Eigen::Matrix<double, JOINT_NUMBER, 1> _initial_target_angle, _lower_angle_limit, _upper_angle_limit;
         Eigen::Matrix<bool, CHAIN_NUMBER, JOINT_NUMBER> _chain_matrix;
-        Eigen::Matrix<bool, CHAIN_NUMBER, 6> _tool_default_pose;
+        Eigen::Matrix<double, CHAIN_NUMBER, 6> _tool_default_pose;
 
     public:
         // Constructor
@@ -68,7 +68,7 @@ class TreeExCArmProperty
         Eigen::Matrix<double, 6, 1> getToolDefaultPose(int chain_);
 
         // Angle Operating
-        Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> getProportionalGainAngleOperation();
+        Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> getProportionalGainAngleOperating();
 
         // Safety
         Eigen::Matrix<double, JOINT_NUMBER, 1> getInitialTargetAngle();
@@ -81,8 +81,8 @@ TreeExCArmProperty::TreeExCArmProperty()
 {
     for(int i = 0; i < JOINT_NUMBER+CHAIN_NUMBER; i++)
     {
-        // _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
-        _link(i,2) = 300.0;
+        _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
+        // _link(i,2) = 300.0;
 
         if(i < JOINT_NUMBER)
         {
@@ -189,7 +189,7 @@ Eigen::Matrix<double, 6, 1> TreeExCArmProperty::getToolDefaultPose(int chain_)
 }
 
 // Angle Operating
-Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> TreeExCArmProperty::getProportionalGainAngleOperation()
+Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> TreeExCArmProperty::getProportionalGainAngleOperating()
 {
     return _proportional_gain_angle_operating;
 }

@@ -86,16 +86,16 @@ int main(int argc, char **argv)
     {
         tree_arm.print();
 
-        // CSAV_pub.publish(tree_arm.getMotorAngularVelocity());
+        CSAV_pub.publish(tree_arm.getMotorAngularVelocity());
 
-        // if(tree_arm.getMotorEnable())
-        // {
-        //     CMAV_pub.publish(tree_arm.getMotorAngularVelocity());
-        // }
-        // else
-        // {
-        //     CMAV_pub.publish(tree_arm.getMotorAngularVelocityZero());
-        // }
+        if(tree_arm.getMotorEnable())
+        {
+            CMAV_pub.publish(tree_arm.getMotorAngularVelocity());
+        }
+        else
+        {
+            CMAV_pub.publish(tree_arm.getMotorAngularVelocityZero());
+        }
 
         ros::spinOnce();
         loop_rate.sleep();
