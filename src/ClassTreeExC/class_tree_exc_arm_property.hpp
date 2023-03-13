@@ -40,6 +40,7 @@ class TreeExCArmProperty
         Eigen::Matrix<double, 3, JOINT_NUMBER+CHAIN_NUMBER> _joint_position, _translation_axis, _rotation_axis;
         Eigen::Matrix<std::string, JOINT_NUMBER+CHAIN_NUMBER, 1> _joint_name;
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> _proportional_gain_angle_operating;
+        double _proportional_gain_exc = 20.0;
         Eigen::Matrix<double, JOINT_NUMBER, 1> _initial_target_angle, _lower_angle_limit, _upper_angle_limit;
         Eigen::Matrix<bool, CHAIN_NUMBER, JOINT_NUMBER> _chain_matrix;
         Eigen::Matrix<double, CHAIN_NUMBER, 6> _tool_default_pose;
@@ -69,6 +70,7 @@ class TreeExCArmProperty
 
         // Angle Operating
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> getProportionalGainAngleOperating();
+        double getProportionalGainExC();
 
         // Safety
         Eigen::Matrix<double, JOINT_NUMBER, 1> getInitialTargetAngle();
@@ -81,8 +83,8 @@ TreeExCArmProperty::TreeExCArmProperty()
 {
     for(int i = 0; i < JOINT_NUMBER+CHAIN_NUMBER; i++)
     {
-        _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
-        // _link(i,2) = 300.0;
+        // _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
+        _link(i,2) = 300.0;
 
         if(i < JOINT_NUMBER)
         {
@@ -188,10 +190,14 @@ Eigen::Matrix<double, 6, 1> TreeExCArmProperty::getToolDefaultPose(int chain_)
     return pose_;
 }
 
-// Angle Operating
+// Gain
 Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> TreeExCArmProperty::getProportionalGainAngleOperating()
 {
     return _proportional_gain_angle_operating;
+}
+double TreeExCArmProperty::getProportionalGainExC()
+{
+    return _proportional_gain_exc;
 }
 
 // Safety

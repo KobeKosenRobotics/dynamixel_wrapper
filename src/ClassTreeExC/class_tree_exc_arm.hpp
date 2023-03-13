@@ -26,7 +26,6 @@ class TreeExCArm
         Eigen::Matrix<double, 6*CHAIN_NUMBER, 1> _pose;
 
         // Inverse Kinematics
-        double _proportional_gain = 20.0;
         Eigen::Matrix<double, 6, 1> _target_object_pose;
         Eigen::Matrix<double, 6*CHAIN_NUMBER, 1> _target_pose;
 
@@ -173,15 +172,15 @@ void TreeExCArm::print()
     << std::endl
     << getPose()
 
-    // << std::endl
-    // << "target pose"
-    // << std::endl
-    // << _target_pose
-
     << std::endl
-    << "dagger"
+    << "target pose"
     << std::endl
     << getExCJacobianBody()
+
+    // << std::endl
+    // << "dagger"
+    // << std::endl
+    // << getExCJacobian()
 
     << std::endl;
 }
@@ -421,7 +420,7 @@ void TreeExCArm::getMotorAngularVelocityByExC()
     #endif
 
     #ifndef DOF6
-    _motor_angular_velocity = _proportional_gain*(tree_base.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
+    _motor_angular_velocity = tree_property.getProportionalGainExC()*(tree_base.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
     #endif
 }
 
@@ -445,30 +444,34 @@ Eigen::Matrix<double, 6*CHAIN_NUMBER, JOINT_NUMBER> TreeExCArm::getExCJacobianBo
         for(int j = 0; j < JOINT_NUMBER; j++)
         {
             // _exc_jacobian_body.block(6*i,j,6,1) << _joint[JOINT_NUMBER+i].getXiDagger(i,j);
-            _exc_jacobian_body.block(6*i,j,6,1) = getDagger(i,j);
+            // _exc_jacobian_body.block(6*i,j,6,1) = getDagger(i,j);
+            if(tree_property.getChainMatrix(i,j)) _exc_jacobian_body.block(6*i,j,6,1) = (tree_base.adjointInverse(_joint[JOINT_NUMBER+i].getChildrenExpXiHatTheta(j)))*(_joint[j].getXi());
         }
     }
 
     return _exc_jacobian_body;
 }
 
-Eigen::Matrix<double, 6, 1> TreeExCArm::getDagger(int chain_, int joint_)
-{
-    Eigen::Matrix<double, 4, 4> matrix_;
-    matrix_ = _joint[JOINT_NUMBER+chain_].getGsjZero();
-    for(int i = JOINT_NUMBER-1; i >= 0; i--)
-    {
-        matrix_ = _joint[i].getExpXiHatTheta(chain_, joint_)*matrix_;
-    }
+// Eigen::Matrix<double, 6, 1> TreeExCArm::getDagger(int chain_, int joint_)
+// {
+//     if(!tree_property.getChainMatrix(chain_, joint_)) return Eigen::Matrix<double, 6, 1>::Zero();
+//     Eigen::Matrix<double, 4, 4> matrix_;
+//     matrix_ = _joint[JOINT_NUMBER+chain_].getGsjZero();
+//     // std::cout << matrix_ << std::endl << std::endl;
+//     for(int i = JOINT_NUMBER-1; i >= joint_; i--)
+//     {
+//         // std::cout << _joint[i].getExpXiHatTheta(chain_) << std::endl << std::endl;
+//         matrix_ = _joint[i].getExpXiHatTheta(chain_, i)*matrix_;
+//     }
 
-    return tree_base.adjointInverse(matrix_)*_joint[joint_].getXi();
-}
+//     return tree_base.adjointInverse(matrix_)*_joint[joint_].getXi();
+// }
 
 Eigen::Matrix<double, 6*CHAIN_NUMBER, 6*CHAIN_NUMBER> TreeExCArm::getTransformationMatrix()
 {
     for(int i = 0; i < CHAIN_NUMBER; i++)
     {
-        _transformation_matrix.block(6*i,6*i,3,3) = (_joint[JOINT_NUMBER+i].getGsjTheta()).block(0,0,3,3);
+        _transformation_matrix.block(6*i,6*i,3,3) = ((_joint[JOINT_NUMBER+i].getGsjTheta()).block(0,0,3,3)).transpose();
         _transformation_matrix.block(6*i+3,6*i+3,3,3) = tree_base.getTransformationEuler(_pose.block(6*i+3,0,3,1));
     }
 

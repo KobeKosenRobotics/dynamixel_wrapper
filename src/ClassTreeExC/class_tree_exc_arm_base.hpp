@@ -42,7 +42,7 @@ class TreeExCArmBase
         Eigen::Matrix<double, 3, 3> hat(Eigen::Matrix<double, 3, 1> &vector_);
 
         // Pseudo-Inverse Matrix
-        Eigen::MatrixXd getPseudoInverseMatrix(Eigen::MatrixXd matrix_);
+        Eigen::MatrixXd getPseudoInverseMatrix(const Eigen::MatrixXd &matrix_);
 
         // Rank
         int getRank(Eigen::MatrixXd matrix_);
@@ -96,7 +96,7 @@ Eigen::Matrix<double, 3, 3> TreeExCArmBase::hat(Eigen::Matrix<double, 3, 1> &vec
 }
 
 // Pseudo-Inverse Matrix
-Eigen::MatrixXd TreeExCArmBase::getPseudoInverseMatrix(Eigen::MatrixXd matrix_)
+Eigen::MatrixXd TreeExCArmBase::getPseudoInverseMatrix(const Eigen::MatrixXd &matrix_)
 {
     Eigen::MatrixXd pseudo_inverse_matrix_;
 
