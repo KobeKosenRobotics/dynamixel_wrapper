@@ -39,7 +39,7 @@ class TreeExCArmBase
         Eigen::Matrix<double, 4, 4> getIdentity4();
 
         // Hat
-        Eigen::Matrix<double, 3, 3> hat(Eigen::Matrix<double, 3, 1> &vector_);
+        Eigen::Matrix<double, 3, 3> hat(const Eigen::Matrix<double, 3, 1> &vector_);
 
         // Pseudo-Inverse Matrix
         Eigen::MatrixXd getPseudoInverseMatrix(const Eigen::MatrixXd &matrix_);
@@ -48,14 +48,14 @@ class TreeExCArmBase
         int getRank(Eigen::MatrixXd matrix_);
 
         // Rotation Matrix
-        Eigen::Matrix<double, 3, 3> getRotationMatrixX(double &angle_);
-        Eigen::Matrix<double, 3, 3> getRotationMatrixY(double &angle_);
-        Eigen::Matrix<double, 3, 3> getRotationMatrixZ(double &angle_);
+        Eigen::Matrix<double, 3, 3> getRotationMatrixX(const double &angle_);
+        Eigen::Matrix<double, 3, 3> getRotationMatrixY(const double &angle_);
+        Eigen::Matrix<double, 3, 3> getRotationMatrixZ(const double &angle_);
 
         // Forward Kinematics
         Eigen::Matrix<double, 6, 1> getPose(Eigen::Matrix<double, 4, 4> homogeneous_transformation_matrix_);
 
-        Eigen::Matrix<double, 6, 6> adjoint(Eigen::Matrix<double, 4, 4> &matrix_);
+        Eigen::Matrix<double, 6, 6> adjoint(const Eigen::Matrix<double, 4, 4> &matrix_);
         // TODO: adjointInverse(Matrix &matrix_); comparison calculation time
         Eigen::Matrix<double, 6, 6> adjointInverse(Eigen::Matrix<double, 4, 4> matrix_);
         Eigen::Matrix<double, 3, 3> getTransformationEuler(Eigen::Matrix<double, 3, 1> euler_);
@@ -83,7 +83,7 @@ Eigen::Matrix<double, 4, 4> TreeExCArmBase::getIdentity4()
 }
 
 //
-Eigen::Matrix<double, 3, 3> TreeExCArmBase::hat(Eigen::Matrix<double, 3, 1> &vector_)
+Eigen::Matrix<double, 3, 3> TreeExCArmBase::hat(const Eigen::Matrix<double, 3, 1> &vector_)
 {
     Eigen::Matrix<double, 3, 3> hat_vector_;
 
@@ -107,8 +107,6 @@ Eigen::MatrixXd TreeExCArmBase::getPseudoInverseMatrix(const Eigen::MatrixXd &ma
 
     pseudo_inverse_matrix_ = V*S.inverse()*U.transpose();
 
-    // std::cout << pseudo_inverse_matrix_*matrix_ << std::endl;
-
     return pseudo_inverse_matrix_;
 }
 
@@ -122,7 +120,7 @@ int TreeExCArmBase::getRank(Eigen::MatrixXd matrix_)
 }
 
 // Rotation Matrix
-Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixX(double &angle_)
+Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixX(const double &angle_)
 {
     Eigen::Matrix<double, 3,3> rotation_matrix_x_;
     rotation_matrix_x_ <<
@@ -132,7 +130,7 @@ Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixX(double &angle_)
     return rotation_matrix_x_;
 }
 
-Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixY(double &angle_)
+Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixY(const double &angle_)
 {
     Eigen::Matrix<double, 3,3> rotation_matrix_y_;
     rotation_matrix_y_ <<
@@ -142,7 +140,7 @@ Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixY(double &angle_)
     return rotation_matrix_y_;
 }
 
-Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixZ(double &angle_)
+Eigen::Matrix<double, 3, 3> TreeExCArmBase::getRotationMatrixZ(const double &angle_)
 {
     Eigen::Matrix<double, 3,3> rotation_matrix_z_;
     rotation_matrix_z_ <<
@@ -174,7 +172,7 @@ Eigen::Matrix<double, 6, 1> TreeExCArmBase::getPose(Eigen::Matrix<double, 4, 4> 
 }
 
 // Adjoint
-Eigen::Matrix<double, 6, 6> TreeExCArmBase::adjoint(Eigen::Matrix<double, 4, 4> &matrix_)
+Eigen::Matrix<double, 6, 6> TreeExCArmBase::adjoint(const Eigen::Matrix<double, 4, 4> &matrix_)
 {
     Eigen::Matrix<double, 3, 3> rotation_matrix_;
     Eigen::Matrix<double, 3, 1> position_;

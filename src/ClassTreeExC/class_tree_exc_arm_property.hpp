@@ -53,9 +53,9 @@ class TreeExCArmProperty
         Eigen::Matrix<double, 3, JOINT_NUMBER+CHAIN_NUMBER> link2JointPosition(Eigen::Matrix<double, JOINT_NUMBER+CHAIN_NUMBER, 3> link_);
 
         // Joint Parameter
-        Eigen::Matrix<double, 3, 1> getQ(int &joint_);
-        Eigen::Matrix<double, 3, 1> getV(int &joint_);
-        Eigen::Matrix<double, 3, 1> getW(int &joint_);
+        Eigen::Matrix<double, 3, 1> getQ(const int &joint_);
+        Eigen::Matrix<double, 3, 1> getV(const int &joint_);
+        Eigen::Matrix<double, 3, 1> getW(const int &joint_);
 
         // Joint Link
         Eigen::Matrix<double, 3, 1> getLink(int joint_);
@@ -65,7 +65,7 @@ class TreeExCArmProperty
         std::string getJointName(int joint_);
 
         // Chain Matrix
-        bool getChainMatrix(int &chain_, int &joint_);
+        bool getChainMatrix(const int &chain_, const int &joint_);
         Eigen::Matrix<double, 6, 1> getToolDefaultPose(int chain_);
 
         // Angle Operating
@@ -139,23 +139,23 @@ Eigen::Matrix<double, 3, JOINT_NUMBER+CHAIN_NUMBER> TreeExCArmProperty::link2Joi
 }
 
 // Joint Parameter
-Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getQ(int &joint_)
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getQ(const int &joint_)
 {
     return _joint_position.col(joint_);
 }
 
-Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getV(int &joint_)
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getV(const int &joint_)
 {
     return _translation_axis.col(joint_);
 }
 
-Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getW(int &joint_)
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getW(const int &joint_)
 {
     return _rotation_axis.col(joint_);
 }
 
 // Joint Link
-Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getLink(int joint_)
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getLink(const int joint_)
 {
     return (_link.row(joint_)).transpose();
 }
@@ -171,7 +171,7 @@ std::string TreeExCArmProperty::getJointName(int joint_)
 }
 
 // Chain Matrix
-bool TreeExCArmProperty::getChainMatrix(int &chain_, int &joint_)
+bool TreeExCArmProperty::getChainMatrix(const int &chain_, const int &joint_)
 {
     return _chain_matrix(chain_, joint_);
 }

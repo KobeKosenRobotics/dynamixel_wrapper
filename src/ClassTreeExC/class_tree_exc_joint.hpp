@@ -50,8 +50,6 @@ class TreeExCJoint
             Eigen::Matrix<double, 4, 4> getGsjThetaRecursion();
         Eigen::Matrix<double, 4, 4> getChildrenExpXiHatTheta(int minimum_joint_);
             Eigen::Matrix<double, 4, 4> getChildrenExpXiHatThetaRecursion();
-            Eigen::Matrix<double, 4, 4> getExpXiHatTheta(int chain_, int joint_);
-        Eigen::Matrix<double, 6, 1> getXiDagger(int chain_, int joint_);
 
 };
 
@@ -174,8 +172,6 @@ Eigen::Matrix<double, 3, 3> TreeExCJoint::getExpWHatTheta()
 
 Eigen::Matrix<double, 4, 4> TreeExCJoint::getGsjTheta()
 {
-    // std::cout << "gsj" << std::endl;
-    // std::cout << _joint << "    ";
     return getGsjThetaRecursion()*_gsj_zero;
 }
 
@@ -183,7 +179,6 @@ Eigen::Matrix<double, 4, 4> TreeExCJoint::getGsjThetaRecursion()
 {
     if(_parent_joint == nullptr)
     {
-        // std::cout << _joint << "    ";
         std::cout << std::endl;
         return getExpXiHatTheta();
     }
@@ -191,15 +186,12 @@ Eigen::Matrix<double, 4, 4> TreeExCJoint::getGsjThetaRecursion()
     {
         return _parent_joint->getGsjThetaRecursion();
     }
-    // std::cout << _joint << "    ";
+
     return _parent_joint->getGsjThetaRecursion()*getExpXiHatTheta();
 }
 
 Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatTheta(int minimum_joint_)
 {
-    // std::cout << "xi dagger" << std::endl;
-    // std::cout << _joint << "    ";
-
     if(_joint < JOINT_NUMBER) std::cout << "ERROR: _joint < JOINT_NUMBER" << std::endl;
 
     _minimum_joint = minimum_joint_;
@@ -210,12 +202,8 @@ Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatTheta(int minimum_j
 
 Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatThetaRecursion()
 {
-    // std::cout << _minimum_joint << std::endl;
-
     if(_joint == _minimum_joint)
     {
-        // std::cout << _joint << "    ";
-        // std::cout << std::endl;
         return getExpXiHatTheta();
     }
 
@@ -225,24 +213,8 @@ Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatThetaRecursion()
     {
         return _parent_joint->getChildrenExpXiHatThetaRecursion();
     }
-    // std::cout << _joint << "    ";
+
     return _parent_joint->getChildrenExpXiHatThetaRecursion()*getExpXiHatTheta();
 }
-
-// Eigen::Matrix<double, 4, 4> TreeExCJoint::getExpXiHatTheta(int chain_, int joint_)
-// {
-//     if(tree_property.getChainMatrix(chain_, joint_)) return getExpXiHatTheta();
-//     return tree_base.getIdentity4();
-// }
-
-
-Eigen::Matrix<double, 6, 1> TreeExCJoint::getXiDagger(int chain_, int joint_)
-{
-    // _xi_dagger = tree_base.adjointInverse(getChildrenExpXiHatTheta(chain_, joint_))*_xi;
-    return _xi_dagger;
-}
-
-
-
 
 #endif

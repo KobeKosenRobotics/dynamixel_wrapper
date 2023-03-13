@@ -172,16 +172,6 @@ void TreeExCArm::print()
     << std::endl
     << getPose()
 
-    << std::endl
-    << "target pose"
-    << std::endl
-    << getExCJacobianBody()
-
-    // << std::endl
-    // << "dagger"
-    // << std::endl
-    // << getExCJacobian()
-
     << std::endl;
 }
 
@@ -443,29 +433,24 @@ Eigen::Matrix<double, 6*CHAIN_NUMBER, JOINT_NUMBER> TreeExCArm::getExCJacobianBo
     {
         for(int j = 0; j < JOINT_NUMBER; j++)
         {
-            // _exc_jacobian_body.block(6*i,j,6,1) << _joint[JOINT_NUMBER+i].getXiDagger(i,j);
-            // _exc_jacobian_body.block(6*i,j,6,1) = getDagger(i,j);
-            if(tree_property.getChainMatrix(i,j)) _exc_jacobian_body.block(6*i,j,6,1) = (tree_base.adjointInverse(_joint[JOINT_NUMBER+i].getChildrenExpXiHatTheta(j)))*(_joint[j].getXi());
+            _exc_jacobian_body.block(6*i,j,6,1) = getDagger(i,j);
         }
     }
 
     return _exc_jacobian_body;
 }
 
-// Eigen::Matrix<double, 6, 1> TreeExCArm::getDagger(int chain_, int joint_)
-// {
-//     if(!tree_property.getChainMatrix(chain_, joint_)) return Eigen::Matrix<double, 6, 1>::Zero();
-//     Eigen::Matrix<double, 4, 4> matrix_;
-//     matrix_ = _joint[JOINT_NUMBER+chain_].getGsjZero();
-//     // std::cout << matrix_ << std::endl << std::endl;
-//     for(int i = JOINT_NUMBER-1; i >= joint_; i--)
-//     {
-//         // std::cout << _joint[i].getExpXiHatTheta(chain_) << std::endl << std::endl;
-//         matrix_ = _joint[i].getExpXiHatTheta(chain_, i)*matrix_;
-//     }
-
-//     return tree_base.adjointInverse(matrix_)*_joint[joint_].getXi();
-// }
+Eigen::Matrix<double, 6, 1> TreeExCArm::getDagger(int chain_, int joint_)
+{
+    if(tree_property.getChainMatrix(chain_,joint_))
+    {
+        return (tree_base.adjointInverse(_joint[JOINT_NUMBER+chain_].getChildrenExpXiHatTheta(joint_)))*(_joint[joint_].getXi());
+    }
+    else
+    {
+        return Eigen::Matrix<double, 6, 1>::Zero();
+    }
+}
 
 Eigen::Matrix<double, 6*CHAIN_NUMBER, 6*CHAIN_NUMBER> TreeExCArm::getTransformationMatrix()
 {
