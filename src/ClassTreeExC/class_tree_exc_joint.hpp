@@ -32,6 +32,7 @@ class TreeExCJoint
 
         // Family
         void setJoint(int joint_);
+        void setJointProperty();
             Eigen::Matrix<double, 3, 1> getQ();
             Eigen::Matrix<double, 6, 1> getXi();
             Eigen::Matrix<double, 4, 4> getGsjZero();
@@ -62,7 +63,10 @@ TreeExCJoint::TreeExCJoint()
 void TreeExCJoint::setJoint(int joint_)
 {
     _joint = joint_;
+}
 
+void TreeExCJoint::setJointProperty()
+{
     _q = getQ();
     _v = tree_property.getV(_joint);
     _w = tree_property.getW(_joint);
