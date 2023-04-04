@@ -28,9 +28,13 @@
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
-const int JOINT_NUMBER = 32;
+// const int JOINT_NUMBER = 32;
+// const int CHAIN_NUMBER = 5;
+// const int BINDING_CONDITIONS = 3;    // 1: Frictionless point contact    3: Point contact with friction    4: Soft finger
+
+const int JOINT_NUMBER = 29;
 const int CHAIN_NUMBER = 5;
-const int BINDING_CONDITIONS = 3;    // 1: Frictionless point contact    3: Point contact with friction    4: Soft finger
+const int BINDING_CONDITIONS = 3;
 
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
 
@@ -86,23 +90,36 @@ TreeExCArmProperty tree_property;
 
 TreeExCArmProperty::TreeExCArmProperty()
 {
+    // for(int i = 0; i < JOINT_NUMBER+CHAIN_NUMBER; i++)
+    // {
+    //     // _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
+    //     _link(i,2) = 300.0;
+
+    //     if(i < JOINT_NUMBER)
+    //     {
+    //         if(i%2 == 0)
+    //         {
+    //             _rotation_axis(2,i) = 1.0;
+    //         }
+    //         else
+    //         {
+    //             _rotation_axis(1,i) = 1.0;
+    //             _initial_target_angle(i,0) = 0.1;
+    //         }
+
+    //         _lower_angle_limit(i,0) = -M_PI;
+    //         _upper_angle_limit(i,0) = M_PI;
+    //     }
+
+    //     std::stringstream ss;
+    //     ss << "joint" << i;
+    //     _joint_name(i,0) = ss.str();
+    // }
+
     for(int i = 0; i < JOINT_NUMBER+CHAIN_NUMBER; i++)
     {
-        // _link(i,2) = double(1000.0/(JOINT_NUMBER+1));
-        _link(i,2) = 300.0;
-
         if(i < JOINT_NUMBER)
         {
-            if(i%2 == 0)
-            {
-                _rotation_axis(2,i) = 1.0;
-            }
-            else
-            {
-                _rotation_axis(1,i) = 1.0;
-                _initial_target_angle(i,0) = 0.1;
-            }
-
             _lower_angle_limit(i,0) = -M_PI;
             _upper_angle_limit(i,0) = M_PI;
         }
@@ -112,6 +129,50 @@ TreeExCArmProperty::TreeExCArmProperty()
         _joint_name(i,0) = ss.str();
     }
 
+    _link <<
+    0, 0, 0,
+    0, 0, 0,
+    0, 0, 0,
+
+    0, 0, 300,
+
+    0, 0, 300,
+    0, 0, 0,
+    0, 0, 0,
+
+    -34, 0, 29,
+    0, 0, 0,
+    -38*cos(45*deg2rad), 0, 38*sin(45*deg2rad),
+    0, 0, 0,
+    -32*cos(45*deg2rad), 0, 32*sin(45*deg2rad),
+
+    -34, 0, 95,
+    0, 0, 0,
+    0, 0, 45,
+    0, 0, 25,
+
+    -11, 0, 99,
+    0, 0, 0,
+    0, 0, 45,
+    0, 0, 25,
+
+    11, 0, 95,
+    0, 0, 0,
+    0, 0, 45,
+    0, 0, 25,
+
+    22, 0, 20.71,
+    0, 0, 86.6-20.71,
+    0, 0, 0,
+    0, 0, 45,
+    0, 0, 25,
+
+    -27.5*cos(45*deg2rad), 0, 27.5*sin(45*deg2rad),
+    0, 0, 26,
+    0, 0, 26,
+    0, 0, 26,
+    0, 0, 26;
+
     _proportional_gain_angle_operating.setIdentity();
 
     // Chain Matrix
@@ -120,15 +181,80 @@ TreeExCArmProperty::TreeExCArmProperty()
     //       -14-15-16-17-18-19-34
     //       -20-21-22-23-24-25-35
     //       -26-27-28-29-30-31-36
+    // _chain_matrix <<
+    // // 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+    // 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+    // 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1;
+
     _chain_matrix <<
     // 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-    1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-    1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1;
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1;
 
-    setToolDefaultPose();
+    Eigen::Matrix<double, 34, 3> mat_;
+    mat_ <<
+    1, 0, 0,
+    0, 1, 0,
+    0, 0, 1,
+
+    1, 0, 0,
+
+    1, 0, 0,
+    0, 1, 0,
+    0, 0, 1,
+
+    -cos(45*deg2rad), 0, -cos(45*deg2rad),
+    -cos(45*deg2rad), 0, cos(45*deg2rad),
+    -cos(45*deg2rad), 0, -cos(45*deg2rad),
+    0, 1, 0,
+    0, 1, 0,
+
+    1, 0, 0,
+    0, 1, 0,
+    1, 0, 0,
+    1, 0, 0,
+
+    1, 0, 0,
+    0, 1, 0,
+    1, 0, 0,
+    1, 0, 0,
+
+    1, 0, 0,
+    0, 1, 0,
+    1, 0, 0,
+    1, 0, 0,
+
+
+    -cos(55*deg2rad), 0, sin(55*deg2rad),
+    1, 0, 0,
+    0, 1, 0,
+    1, 0, 0,
+    1, 0, 0,
+
+    0, 0, 0,
+    0, 0, 0,
+    0, 0, 0,
+    0, 0, 0,
+    0, 0, 0;
+
+    _rotation_axis = mat_.transpose();
+
+    // setToolDefaultPose();
+    _tool_default_pose <<
+    -1  , -0.9, -0.3,  0.3,  0.9,
+    -1  ,  0.8,  1  ,  1  ,  0.6,
+     0  ,  0  ,  0  ,  0  ,  0  ,
+     0  ,  0  ,  0  ,  0  ,  0  ,
+     0  ,  0  ,  0  ,  0  ,  0  ,
+     0  ,  0  ,  0  ,  0  ,  0  ;
+
+    // [0.1, 0.1, 0.1, -1.0, -0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1]
 
     setBindingMatrix(BINDING_CONDITIONS);
 }

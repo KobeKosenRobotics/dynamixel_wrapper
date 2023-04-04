@@ -88,6 +88,8 @@ Eigen::Matrix<double, 3, 1> TreeExCJoint::getQ()
         return tree_property.getLink(_joint);
     }
     return _parent_joint->_q+tree_property.getLink(_joint);
+
+    // return tree_property.getQ(_joint);
 }
 
 Eigen::Matrix<double, 6, 1> TreeExCJoint::getXi()
