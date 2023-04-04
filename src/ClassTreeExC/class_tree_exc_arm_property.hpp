@@ -62,16 +62,16 @@ class TreeExCArmProperty
         Eigen::Matrix<double, 3, 1> getW(const int &joint_);
 
         // Joint Link
-        Eigen::Matrix<double, 3, 1> getLink(int joint_);
-        double getLink(int joint_, int axis_);
+        Eigen::Matrix<double, 3, 1> getLink(const int &joint_);
+        double getLink(const int &joint_, const int &axis_);
 
         // Joint Name
-        std::string getJointName(int joint_);
+        std::string getJointName(const int &joint_);
 
         // Chain Matrix
         bool getChainMatrix(const int &chain_, const int &joint_);
         void setToolDefaultPose();
-        Eigen::Matrix<double, 6, 1> getToolDefaultPose(int chain_);
+        Eigen::Matrix<double, 6, 1> getToolDefaultPose(const int &chain_);
 
         // Binding Conditions
         void setBindingMatrix(const int &binding_conditions_);
@@ -83,8 +83,8 @@ class TreeExCArmProperty
 
         // Safety
         Eigen::Matrix<double, JOINT_NUMBER, 1> getInitialTargetAngle();
-        double getLowerAngleLimit(int joint_);
-        double getUpperAngleLimit(int joint_);
+        double getLowerAngleLimit(const int &joint_);
+        double getUpperAngleLimit(const int &joint_);
 };
 TreeExCArmProperty tree_property;
 
@@ -276,17 +276,17 @@ Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getW(const int &joint_)
 }
 
 // Joint Link
-Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getLink(const int joint_)
+Eigen::Matrix<double, 3, 1> TreeExCArmProperty::getLink(const int &joint_)
 {
     return (_link.row(joint_)).transpose();
 }
 
-double TreeExCArmProperty::getLink(int joint_, int axis_)
+double TreeExCArmProperty::getLink(const int &joint_, const int &axis_)
 {
     return _link(joint_,axis_);
 }
 // Joint Name
-std::string TreeExCArmProperty::getJointName(int joint_)
+std::string TreeExCArmProperty::getJointName(const int &joint_)
 {
     return _joint_name(joint_,0);
 }
@@ -325,7 +325,7 @@ void TreeExCArmProperty::setToolDefaultPose()
     }
 }
 
-Eigen::Matrix<double, 6, 1> TreeExCArmProperty::getToolDefaultPose(int chain_)
+Eigen::Matrix<double, 6, 1> TreeExCArmProperty::getToolDefaultPose(const int &chain_)
 {
     return _tool_default_pose.col(chain_);
 }
@@ -378,12 +378,12 @@ Eigen::Matrix<double, JOINT_NUMBER, 1> TreeExCArmProperty::getInitialTargetAngle
     return _initial_target_angle;
 }
 
-double TreeExCArmProperty::getLowerAngleLimit(int joint_)
+double TreeExCArmProperty::getLowerAngleLimit(const int &joint_)
 {
     return _lower_angle_limit(joint_,0);
 }
 
-double TreeExCArmProperty::getUpperAngleLimit(int joint_)
+double TreeExCArmProperty::getUpperAngleLimit(const int &joint_)
 {
     return _upper_angle_limit(joint_,0);
 }

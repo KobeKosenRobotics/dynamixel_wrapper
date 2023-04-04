@@ -18,12 +18,12 @@ class TreeExCArmSimulator
 
         // Joint
         void setJoint();
-        void setParent(int c_, int j_);
-            int getParentNumber(int c_, int j_);
-        void setChildren(int c_, int j_);
-            int getChildrenNumber(int c_, int j_);
+        void setParent(const int &c_, const int &j_);
+            int getParentNumber(const int &c_, const int &j_);
+        void setChildren(const int &c_, const int &j_);
+            int getChildrenNumber(const int &c_, const int &j_);
 
-        void update(std_msgs::Float32MultiArray &angular_velocity_);
+        void update(const std_msgs::Float32MultiArray &angular_velocity_);
         std_msgs::Float32MultiArray getAngle();
 };
 
@@ -54,7 +54,7 @@ void TreeExCArmSimulator::setJoint()
     }
 }
 
-void TreeExCArmSimulator::setParent(int c_, int j_)
+void TreeExCArmSimulator::setParent(const int &c_, const int &j_)
 {
     if(j_ <= 0) return;
     if(!tree_property.getChainMatrix(c_, j_)) return;
@@ -67,7 +67,7 @@ void TreeExCArmSimulator::setParent(int c_, int j_)
     }
 }
 
-int TreeExCArmSimulator::getParentNumber(int c_, int j_)
+int TreeExCArmSimulator::getParentNumber(const int &c_, const int &j_)
 {
     if(j_ < 0) return -1;
 
@@ -82,7 +82,7 @@ int TreeExCArmSimulator::getParentNumber(int c_, int j_)
     }
 }
 
-void TreeExCArmSimulator::setChildren(int c_, int j_)
+void TreeExCArmSimulator::setChildren(const int &c_, const int &j_)
 {
     if(JOINT_NUMBER <= j_) return;
     if(!tree_property.getChainMatrix(c_, j_)) return;
@@ -95,7 +95,7 @@ void TreeExCArmSimulator::setChildren(int c_, int j_)
     }
 }
 
-int TreeExCArmSimulator::getChildrenNumber(int c_, int j_)
+int TreeExCArmSimulator::getChildrenNumber(const int &c_, const int &j_)
 {
     if((JOINT_NUMBER+CHAIN_NUMBER) < j_) return -1;
 
@@ -110,7 +110,7 @@ int TreeExCArmSimulator::getChildrenNumber(int c_, int j_)
     }
 }
 
-void TreeExCArmSimulator::update(std_msgs::Float32MultiArray &angular_velocity_)
+void TreeExCArmSimulator::update(const std_msgs::Float32MultiArray &angular_velocity_)
 {
     _angular_velocity = angular_velocity_;
 

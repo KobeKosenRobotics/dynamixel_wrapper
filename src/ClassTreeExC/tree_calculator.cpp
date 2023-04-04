@@ -20,7 +20,7 @@ void SCA_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
     // if(!tree_arm.getMotorEnable())
     {
-        tree_arm.setSensorAngle(*msg);
+        tree_arm.setSensorAngle(msg);
     }
 }
 
@@ -28,33 +28,33 @@ void MCA_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
     // if(tree_arm.getMotorEnable())
     {
-        tree_arm.setSensorAngle(*msg);
+        tree_arm.setSensorAngle(msg);
     }
 }
 
 void target_angle_cb(std_msgs::Float32MultiArray::ConstPtr msg)
 {
-    tree_arm.setTargetAngle(*msg);
+    tree_arm.setTargetAngle(msg);
 }
 
 void target_pose_cb(geometry_msgs::Pose::ConstPtr msg)
 {
-    tree_arm.setTargetPose(*msg);
+    tree_arm.setTargetPose(msg);
 }
 
 void motor_enable_cb(std_msgs::Bool::ConstPtr msg)
 {
-    tree_arm.setMotorEnable(*msg);
+    tree_arm.setMotorEnable(msg);
 }
 
 void emergency_stop_cb(std_msgs::Bool::ConstPtr msg)
 {
-    tree_arm.setEmergencyStop(*msg);
+    tree_arm.setEmergencyStop(msg);
 }
 
 void calculation_mode_cb(std_msgs::Int16::ConstPtr msg)
 {
-    tree_arm.setCalculationMode(*msg);
+    tree_arm.setCalculationMode(msg);
 }
 
 int main(int argc, char **argv)

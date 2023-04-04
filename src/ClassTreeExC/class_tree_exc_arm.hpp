@@ -53,21 +53,21 @@ class TreeExCArm
 
         // Joint
         void setJoint();
-        void setParent(int c_, int j_);
-            int getParentNumber(int c_, int j_);
-        void setChildren(int c_, int j_);
-            int getChildrenNumber(int c_, int j_);
+        void setParent(const int &c_, const int &j_);
+            int getParentNumber(const int &c_, const int &j_);
+        void setChildren(const int &c_, const int &j_);
+            int getChildrenNumber(const int &c_, const int &j_);
 
         // Debug
         void print();
 
         // Subscribe
-        void setMotorEnable(std_msgs::Bool motor_enable_);
-        void setEmergencyStop(std_msgs::Bool emergency_stop_);
-        void setCalculationMode(std_msgs::Int16 calculation_mode_);
-        void setSensorAngle(std_msgs::Float32MultiArray sensor_angle_);
-        void setTargetAngle(std_msgs::Float32MultiArray target_angle_);
-        void setTargetPose(geometry_msgs::Pose target_pose_);
+        void setMotorEnable(std_msgs::Bool::ConstPtr motor_enable_);
+        void setEmergencyStop(std_msgs::Bool::ConstPtr emergency_stop_);
+        void setCalculationMode(std_msgs::Int16::ConstPtr calculation_mode_);
+        void setSensorAngle(std_msgs::Float32MultiArray::ConstPtr sensor_angle_);
+        void setTargetAngle(std_msgs::Float32MultiArray::ConstPtr target_angle_);
+        void setTargetPose(geometry_msgs::Pose::ConstPtr target_pose_);
             void setTargetPoseStart();
             Eigen::Matrix<double, 6*CHAIN_NUMBER, 1> getMidTargetPoseLinearInterpolation();
 
@@ -90,7 +90,7 @@ class TreeExCArm
         // ExC: Exponential Coordinates
         Eigen::Matrix<double, 6*CHAIN_NUMBER, JOINT_NUMBER> getExCJacobian();
         Eigen::Matrix<double, 6*CHAIN_NUMBER, JOINT_NUMBER> getExCJacobianBody();
-        Eigen::Matrix<double, 6, 1> getDagger(int chain_, int joint_);
+        Eigen::Matrix<double, 6, 1> getDagger(const int &chain_, const int &joint_);
         Eigen::Matrix<double, 6*CHAIN_NUMBER, 6*CHAIN_NUMBER> getTransformationMatrix();
 };
 
@@ -122,7 +122,7 @@ void TreeExCArm::setJoint()
     }
 }
 
-void TreeExCArm::setParent(int c_, int j_)
+void TreeExCArm::setParent(const int &c_, const int &j_)
 {
     if(j_ <= 0) return;
     if(!tree_property.getChainMatrix(c_, j_)) return;
@@ -135,7 +135,7 @@ void TreeExCArm::setParent(int c_, int j_)
     }
 }
 
-int TreeExCArm::getParentNumber(int c_, int j_)
+int TreeExCArm::getParentNumber(const int &c_, const int &j_)
 {
     if(j_ < 0) return -1;
 
@@ -150,7 +150,7 @@ int TreeExCArm::getParentNumber(int c_, int j_)
     }
 }
 
-void TreeExCArm::setChildren(int c_, int j_)
+void TreeExCArm::setChildren(const int &c_, const int &j_)
 {
     if(JOINT_NUMBER <= j_) return;
     if(!tree_property.getChainMatrix(c_, j_)) return;
@@ -163,7 +163,7 @@ void TreeExCArm::setChildren(int c_, int j_)
     }
 }
 
-int TreeExCArm::getChildrenNumber(int c_, int j_)
+int TreeExCArm::getChildrenNumber(const int &c_, const int &j_)
 {
     if((JOINT_NUMBER+CHAIN_NUMBER) < j_) return -1;
 
@@ -197,62 +197,62 @@ void TreeExCArm::print()
 }
 
 // Subscribe
-void TreeExCArm::setMotorEnable(std_msgs::Bool motor_enable_)
+void TreeExCArm::setMotorEnable(std_msgs::Bool::ConstPtr motor_enable_)
 {
-    _motor_enable = motor_enable_.data;
+    _motor_enable = motor_enable_->data;
 }
 
-void TreeExCArm::setEmergencyStop(std_msgs::Bool emergency_stop_)
+void TreeExCArm::setEmergencyStop(std_msgs::Bool::ConstPtr emergency_stop_)
 {
-    _emergency_stop = emergency_stop_.data;
+    _emergency_stop = emergency_stop_->data;
 }
 
-void TreeExCArm::setCalculationMode(std_msgs::Int16 calculation_mode_)
+void TreeExCArm::setCalculationMode(std_msgs::Int16::ConstPtr calculation_mode_)
 {
     _calculation_mode_old = _calculation_mode;
-    _calculation_mode = calculation_mode_.data;
+    _calculation_mode = calculation_mode_->data;
 }
 
-void TreeExCArm::setSensorAngle(std_msgs::Float32MultiArray sensor_angle_)
+void TreeExCArm::setSensorAngle(std_msgs::Float32MultiArray::ConstPtr sensor_angle_)
 {
-    sensor_angle_.data.resize(JOINT_NUMBER);
+    // sensor_angle_.data.resize(JOINT_NUMBER);
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
-        _sensor_angle(i,0) = sensor_angle_.data[i];
+        _sensor_angle(i,0) = sensor_angle_->data[i];
         _joint[i].updateTheta(_sensor_angle(i,0));
     }
 }
 
-void TreeExCArm::setTargetAngle(std_msgs::Float32MultiArray target_angle_)
+void TreeExCArm::setTargetAngle(std_msgs::Float32MultiArray::ConstPtr target_angle_)
 {
-    target_angle_.data.resize(JOINT_NUMBER);
+    // target_angle_.data.resize(JOINT_NUMBER);
     for(int i = 0; i < JOINT_NUMBER; i++)
     {
-        _target_angle(i,0) = target_angle_.data[i];
+        _target_angle(i,0) = target_angle_->data[i];
     }
 }
 
-void TreeExCArm::setTargetPose(geometry_msgs::Pose target_pose_)
+void TreeExCArm::setTargetPose(geometry_msgs::Pose::ConstPtr target_pose_)
 {
-    if((target_pose_ != _target_pose_old) || (_calculation_mode != _calculation_mode_old))
+    if((*target_pose_ != _target_pose_old) || (_calculation_mode != _calculation_mode_old))
     {
-        _target_object_pose(0,0) = target_pose_.position.x;
-        _target_object_pose(1,0) = target_pose_.position.y;
-        _target_object_pose(2,0) = target_pose_.position.z;
-        _target_object_pose(3,0) = target_pose_.orientation.z;
-        _target_object_pose(4,0) = target_pose_.orientation.y;
-        _target_object_pose(5,0) = target_pose_.orientation.x;
+        _target_object_pose(0,0) = target_pose_->position.x;
+        _target_object_pose(1,0) = target_pose_->position.y;
+        _target_object_pose(2,0) = target_pose_->position.z;
+        _target_object_pose(3,0) = target_pose_->orientation.z;
+        _target_object_pose(4,0) = target_pose_->orientation.y;
+        _target_object_pose(5,0) = target_pose_->orientation.x;
 
         for(int i = 0; i < CHAIN_NUMBER; i++)
         {
-            _target_pose.block(6*i, 0, 3, 1) = _target_object_pose.block(0,0,3,1) + target_pose_.orientation.w*(tree_base.getRotationMatrixZ(_target_object_pose(3,0))*tree_base.getRotationMatrixY(_target_object_pose(4,0))*tree_base.getRotationMatrixX(_target_object_pose(5,0))*(tree_property.getToolDefaultPose(i)).block(0,0,3,1));
+            _target_pose.block(6*i, 0, 3, 1) = _target_object_pose.block(0,0,3,1) + target_pose_->orientation.w*(tree_base.getRotationMatrixZ(_target_object_pose(3,0))*tree_base.getRotationMatrixY(_target_object_pose(4,0))*tree_base.getRotationMatrixX(_target_object_pose(5,0))*(tree_property.getToolDefaultPose(i)).block(0,0,3,1));
             _target_pose.block(6*i+3, 0, 3, 1) = _target_object_pose.block(3,0,3,1);
         }
 
         setTargetPoseStart();
     }
 
-    _target_pose_old = target_pose_;
+    _target_pose_old = *target_pose_;
 }
 
 void TreeExCArm::setTargetPoseStart()
@@ -463,7 +463,7 @@ Eigen::Matrix<double, 6*CHAIN_NUMBER, JOINT_NUMBER> TreeExCArm::getExCJacobianBo
     return _exc_jacobian_body;
 }
 
-Eigen::Matrix<double, 6, 1> TreeExCArm::getDagger(int chain_, int joint_)
+Eigen::Matrix<double, 6, 1> TreeExCArm::getDagger(const int &chain_, const int &joint_)
 {
     if(tree_property.getChainMatrix(chain_,joint_))
     {

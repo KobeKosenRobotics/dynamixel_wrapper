@@ -31,7 +31,7 @@ class TreeExCJoint
         TreeExCJoint();
 
         // Family
-        void setJoint(int joint_);
+        void setJoint(const int  &joint_);
         void setJointProperty();
             Eigen::Matrix<double, 3, 1> getQ();
             Eigen::Matrix<double, 6, 1> getXi();
@@ -49,7 +49,7 @@ class TreeExCJoint
 
         Eigen::Matrix<double, 4, 4> getGsjTheta();
             Eigen::Matrix<double, 4, 4> getGsjThetaRecursion();
-        Eigen::Matrix<double, 4, 4> getChildrenExpXiHatTheta(int minimum_joint_);
+        Eigen::Matrix<double, 4, 4> getChildrenExpXiHatTheta(const int  &minimum_joint_);
             Eigen::Matrix<double, 4, 4> getChildrenExpXiHatThetaRecursion();
 
 };
@@ -60,7 +60,7 @@ TreeExCJoint::TreeExCJoint()
 }
 
 // Family
-void TreeExCJoint::setJoint(int joint_)
+void TreeExCJoint::setJoint(const int  &joint_)
 {
     _joint = joint_;
 }
@@ -196,7 +196,7 @@ Eigen::Matrix<double, 4, 4> TreeExCJoint::getGsjThetaRecursion()
     return _parent_joint->getGsjThetaRecursion()*getExpXiHatTheta();
 }
 
-Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatTheta(int minimum_joint_)
+Eigen::Matrix<double, 4, 4> TreeExCJoint::getChildrenExpXiHatTheta(const int  &minimum_joint_)
 {
     if(_joint < JOINT_NUMBER) std::cout << "ERROR: _joint < JOINT_NUMBER" << std::endl;
 
