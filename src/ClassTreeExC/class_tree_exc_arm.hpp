@@ -431,7 +431,9 @@ void TreeExCArm::getMotorAngularVelocityByExC()
     #endif
 
     #ifndef DOF6
-    _motor_angular_velocity = tree_property.getProportionalGainExC()*(tree_base.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
+    // _motor_angular_velocity = tree_property.getProportionalGainExC()*(tree_base.getPseudoInverseMatrix(getExCJacobian()))*(getMidTargetPoseLinearInterpolation()-getPose());
+    tree_property.getBindingMatrix();
+    _motor_angular_velocity = tree_property.getProportionalGainExC()*(tree_base.getPseudoInverseMatrix(tree_property.getBindingMatrix()*getExCJacobian()))*tree_property.getBindingMatrix()*(getMidTargetPoseLinearInterpolation()-getPose());
     #endif
 }
 

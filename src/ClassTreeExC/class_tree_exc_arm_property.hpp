@@ -30,6 +30,7 @@
 
 const int JOINT_NUMBER = 32;
 const int CHAIN_NUMBER = 5;
+const int BINDING_CONDITIONS = 3;    // 1: Frictionless point contact    3: Point contact with friction    4: Soft finger
 
 const double deg2rad = M_PI/180.0, rad2deg = 180.0/M_PI, rpm2radps = 2*M_PI/60.0, radps2rpm = 60.0/(2*M_PI);
 
@@ -44,6 +45,8 @@ class TreeExCArmProperty
         Eigen::Matrix<double, JOINT_NUMBER, 1> _initial_target_angle, _lower_angle_limit, _upper_angle_limit;
         Eigen::Matrix<bool, CHAIN_NUMBER, JOINT_NUMBER> _chain_matrix;
         Eigen::Matrix<double, 6, CHAIN_NUMBER> _tool_default_pose;
+        Eigen::Matrix<double, BINDING_CONDITIONS, 6> _binding_conditions_matrix;
+        Eigen::Matrix<double, BINDING_CONDITIONS*CHAIN_NUMBER, 6*CHAIN_NUMBER> _binding_matrix;
 
     public:
         // Constructor
@@ -65,6 +68,10 @@ class TreeExCArmProperty
         bool getChainMatrix(const int &chain_, const int &joint_);
         void setToolDefaultPose();
         Eigen::Matrix<double, 6, 1> getToolDefaultPose(int chain_);
+
+        // Binding Conditions
+        void setBindingMatrix(const int &binding_conditions_);
+        Eigen::Matrix<double, BINDING_CONDITIONS*CHAIN_NUMBER, 6*CHAIN_NUMBER> getBindingMatrix();
 
         // Angle Operating
         Eigen::Matrix<double, JOINT_NUMBER, JOINT_NUMBER> getProportionalGainAngleOperating();
@@ -122,6 +129,8 @@ TreeExCArmProperty::TreeExCArmProperty()
     1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1;
 
     setToolDefaultPose();
+
+    setBindingMatrix(BINDING_CONDITIONS);
 }
 
 // Joint Parameter
@@ -193,6 +202,38 @@ void TreeExCArmProperty::setToolDefaultPose()
 Eigen::Matrix<double, 6, 1> TreeExCArmProperty::getToolDefaultPose(int chain_)
 {
     return _tool_default_pose.col(chain_);
+}
+
+// Binding Conditions
+void TreeExCArmProperty::setBindingMatrix(const int &binding_conditions_)
+{
+    if(binding_conditions_ == 1)
+    {
+        _binding_conditions_matrix(0,2) = 1;
+    }
+    else if(binding_conditions_ == 3)
+    {
+        _binding_conditions_matrix(0,0) = 1;
+        _binding_conditions_matrix(1,1) = 1;
+        _binding_conditions_matrix(2,2) = 1;
+    }
+    else if(binding_conditions_ == 4)
+    {
+        _binding_conditions_matrix(0,0) = 1;
+        _binding_conditions_matrix(1,1) = 1;
+        _binding_conditions_matrix(2,2) = 1;
+        _binding_conditions_matrix(3,5) = 1;
+    }
+
+    for(int i = 0; i < CHAIN_NUMBER; i++)
+    {
+        _binding_matrix.block(BINDING_CONDITIONS*i,6*i,BINDING_CONDITIONS,6) = _binding_conditions_matrix;
+    }
+}
+
+Eigen::Matrix<double, BINDING_CONDITIONS*CHAIN_NUMBER, 6*CHAIN_NUMBER> TreeExCArmProperty::getBindingMatrix()
+{
+    return _binding_matrix;
 }
 
 // Gain
