@@ -16,13 +16,23 @@
 #include <dynamixel_wrapper/dynamixel_wrapper_configs.h>
 
 namespace dynamixel_wrapper{
+enum class Mode:int{
+    Current,
+    Velocity,
+    Position,
+    ExtendedPosition,
+    CurrentBasePosition,
+    PWM
+};
 class dynamixel_wrapper{
     public:
+    dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, Mode operatingMode);
     dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, int operatingMode);
     void write(dynamixel_wrapper_config_item item, int value);
     uint32_t read(dynamixel_wrapper_config_item item);
     int32_t read_signed(dynamixel_wrapper_config_item item);
     void setDriveMode(int driveMode) { write(motor_config_.drive_mode, driveMode); }
+    void setOperatingMode(Mode operatingMode) { write(motor_config_.operating_mode, static_cast<int>(operatingMode)); }
     void setOperatingMode(int operatingMode) { write(motor_config_.operating_mode, operatingMode); }
     void setHomingOffset(double degree) { write(motor_config_.homing_offset, (int)(degree/360.0f*motor_config_.resolution)); }
     void setMovingThreshold(float rpm){ write(motor_config_.moving_threshold, (int)(rpm/motor_config_.velocity_scaling_factor)); }
@@ -82,6 +92,10 @@ class dynamixel_wrapper{
     dynamixel_wrapper_base* dxl_base_;
     dynamixel_wrapper_config motor_config_;
 };
+dynamixel_wrapper::dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, Mode operatingMode):
+dynamixel_wrapper(id,dxl_base,motor_config,static_cast<int>(operatingMode))
+{
+}
 dynamixel_wrapper::dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, int operatingMode){
     id_=id;
     dxl_base_= &dxl_base;
