@@ -28,6 +28,7 @@ class dynamixel_wrapper{
     public:
     dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, Mode operatingMode);
     dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_base, const dynamixel_wrapper_config& motor_config, int operatingMode);
+    ~dynamixel_wrapper();
     void write(dynamixel_wrapper_config_item item, int value);
     uint32_t read(dynamixel_wrapper_config_item item);
     int32_t read_signed(dynamixel_wrapper_config_item item);
@@ -103,6 +104,9 @@ dynamixel_wrapper::dynamixel_wrapper(const int& id, dynamixel_wrapper_base& dxl_
     setTorqueEnable(false);
     setOperatingMode(operatingMode);
     setTorqueEnable(true);
+}
+dynamixel_wrapper::~dynamixel_wrapper(){
+    setTorqueEnable(false);
 }
 void dynamixel_wrapper::write(dynamixel_wrapper_config_item item, int value){
     int address = item.address;
